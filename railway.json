@@ -1,0 +1,10 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "install": "npm install -w client && npm install -w server",
+      "build": "cd client && npm run build",
+      "start": "cd server && npm start"
+    }
+  }
+}

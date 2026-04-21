@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "地信院项目看板",
   "scripts": {
-    "build": "cd client && npm install && npm run build",
-    "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "install": "npm install && cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js"
   },
   "engines": {
     "node": ">=18"
