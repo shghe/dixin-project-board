@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(mkdir -p /tmp/excel-reader)",
+      "Read(//tmp/**)",
+      "Bash(node -e ' *)",
+      "WebFetch(domain:www.kdocs.cn)",
+      "WebSearch",
+      "Bash(mv \"d:/519工作/李赫/claude/项目管理系统/client-temp/\"* \"d:/519工作/李赫/claude/项目管理系统/client/\")",
+      "Bash(mv \"d:/519工作/李赫/claude/项目管理系统/client-temp/.[!.]*\" \"d:/519工作/李赫/claude/项目管理系统/client/\")",
+      "Bash(timeout 5 node index.js)",
+      "Bash(npm run *)",
+      "Bash(node index.js)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:5173)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Administrator\\.claude\\plans"
+    ]
+  }
+}

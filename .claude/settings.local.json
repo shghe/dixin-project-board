@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import pandas as pd; df = pd.read_excel\\('地信.xls', sheet_name=None\\); print\\('Sheet names:', list\\(df.keys\\(\\)\\)\\); [print\\(f'\\\\n=== {name} ===\\\\n', df[name].to_string\\(\\)\\) for name in df.keys\\(\\)]\")",
+      "Bash(python -c ' *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"zhangsan\",\"password\":\"123456\"}')",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"zhangsan\",\"password\":\"zhangsan\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"zhangsan\",\"password\":\"12345\"}')",
+      "Bash(curl -s \"http://localhost:3000/api/projects\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjEsInVzZXJuYW1lIjoiemhhbmdzYW4iLCJuYW1lIjoiemhhbmdzYW4iLCJyb2xlIjoibWVtYmVyIiwiaWF0IjoxNzc2NjYzNzA3LCJleHAiOjE3NzcyNjg1MDd9.kreudwqa536hh52lGRN_DEJ47CyeMR7v4y3HwzOmSas\")",
+      "Bash(pkill -f \"node index.js\")",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(curl -s http://localhost:3001/api/captcha/captcha)",
+      "Bash(pkill -f \"node -e\")",
+      "Bash(taskkill //F //IM node.exe sleep 2 cd \"d:/519工作/李赫/claude/项目管理系统/server\")",
+      "Bash(npm start *)",
+      "Bash(node -e \"const initSqlJs = require\\('sql.js'\\); const fs = require\\('fs'\\); initSqlJs\\(\\).then\\(SQL => { const db = new SQL.Database\\(fs.readFileSync\\('./database.sqlite'\\)\\); const r = db.exec\\('SELECT id, username, name, role FROM users'\\); console.log\\(JSON.stringify\\(r, null, 2\\)\\); }\\);\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\",\"captcha\":\"test\"}')",
+      "Bash(curl -s http://localhost:3000/api/projects/stats -H \"Authorization: Bearer $\\(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\",\"captcha\":\"test\"}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('Total users in stats:',r.length\\);r.forEach\\(u=>console.log\\(' - ID:',u.userId,'Name:',u.userName\\)\\);}\\)\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)"
+    ]
+  }
+}
