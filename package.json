@@ -1,0 +1,13 @@
+{
+  "name": "dixin-project-board",
+  "version": "1.0.0",
+  "description": "地信院项目看板",
+  "scripts": {
+    "build": "cd client && npm install && npm run build",
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
