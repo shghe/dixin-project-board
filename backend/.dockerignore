@@ -1,0 +1,10 @@
+__pycache__
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+alembic/versions/__pycache__
+.DS_Store
