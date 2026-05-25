@@ -213,10 +213,14 @@ onMounted(async () => {
 
   .quick-actions {
     flex-direction: column;
+    align-items: center;
+    width: 100%;
   }
 
   .quick-actions .el-button {
     width: 100%;
+    max-width: 280px;
+    justify-content: center;
   }
 
   .month-bars {
