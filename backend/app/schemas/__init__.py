@@ -1,4 +1,4 @@
-from app.schemas.auth import LoginRequest, TokenResponse, UserInfo
+from app.schemas.auth import CaptchaResponse, ChangePasswordRequest, LoginRequest, TokenResponse, UserInfo
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, EmployeeResponse
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.contract import ContractCreate, ContractUpdate, ContractResponse

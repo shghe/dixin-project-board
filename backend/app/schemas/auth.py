@@ -4,6 +4,18 @@ from pydantic import BaseModel
 class LoginRequest(BaseModel):
     username: str
     password: str
+    captcha_id: str
+    captcha_code: str
+
+
+class CaptchaResponse(BaseModel):
+    captcha_id: str
+    image: str
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
 
 
 class TokenResponse(BaseModel):

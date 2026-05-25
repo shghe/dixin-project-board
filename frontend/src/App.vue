@@ -62,6 +62,7 @@ const mobileMenuActions = computed(() => {
   const actions = [
     { name: '我的工时', path: '/my-work' },
     { name: '人员报表', path: '/reports/personnel' },
+    { name: '修改密码', path: '/account/password' },
     { name: '退出登录', path: '/login', danger: true },
   ]
   if (isDirector.value) {

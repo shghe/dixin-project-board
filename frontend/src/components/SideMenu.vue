@@ -9,6 +9,7 @@
       <el-menu-item index="/executions" v-if="canViewExec"><el-icon><Tickets /></el-icon><span>每日执行单</span></el-menu-item>
       <el-menu-item index="/my-work"><el-icon><Clock /></el-icon><span>我的工时</span></el-menu-item>
       <el-menu-item index="/reports/personnel"><el-icon><DataAnalysis /></el-icon><span>人员报表</span></el-menu-item>
+      <el-menu-item index="/account/password"><el-icon><Lock /></el-icon><span>修改密码</span></el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -18,7 +19,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
-import { Odometer, User, Folder, Tickets, DataAnalysis, Clock, Setting } from '@element-plus/icons-vue'
+import { Odometer, User, Folder, Tickets, DataAnalysis, Clock, Setting, Lock } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const appStore = useAppStore()

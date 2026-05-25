@@ -15,6 +15,7 @@ const router = createRouter({
     { path: '/executions', name: 'Executions', component: () => import('@/views/executions/ExecutionList.vue') },
     { path: '/my-work', name: 'MyWorkLog', component: () => import('@/views/personal/MyWorkLog.vue') },
     { path: '/reports/personnel', name: 'PersonnelReport', component: () => import('@/views/reports/PersonnelReport.vue') },
+    { path: '/account/password', name: 'ChangePassword', component: () => import('@/views/account/ChangePassword.vue') },
     { path: '/', redirect: '/dashboard' },
   ],
 })
