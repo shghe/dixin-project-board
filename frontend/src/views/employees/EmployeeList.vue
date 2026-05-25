@@ -20,20 +20,20 @@
       <el-form :model="form" label-width="80px">
         <el-form-item label="姓名"><el-input v-model="form.name" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="工种"><el-select v-model="form.work_type" style="width:100%"><el-option v-for="t in workTypes" :key="t" :label="t" :value="t" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="人员类别"><el-select v-model="form.personnel_type" style="width:100%"><el-option label="事业人员" value="事业人员" /><el-option label="企业人员" value="企业人员" /><el-option label="派遣人员" value="派遣人员" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="工种"><el-select v-model="form.work_type" style="width:100%"><el-option v-for="t in workTypes" :key="t" :label="t" :value="t" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="人员类别"><el-select v-model="form.personnel_type" style="width:100%"><el-option label="事业人员" value="事业人员" /><el-option label="企业人员" value="企业人员" /><el-option label="派遣人员" value="派遣人员" /></el-select></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="部门"><el-input v-model="form.department" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="职位"><el-input v-model="form.position" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="部门"><el-input v-model="form.department" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="职位"><el-input v-model="form.position" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="电话"><el-input v-model="form.phone" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="日工资"><el-input-number v-model="form.daily_wage" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model="form.phone" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="日工资"><el-input-number v-model="form.daily_wage" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="入职日期"><el-date-picker v-model="form.hire_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="状态"><el-select v-model="form.status" style="width:100%"><el-option label="在职" value="在职" /><el-option label="离职" value="离职" /><el-option label="借调" value="借调" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="入职日期"><el-date-picker v-model="form.hire_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="状态"><el-select v-model="form.status" style="width:100%"><el-option label="在职" value="在职" /><el-option label="离职" value="离职" /><el-option label="借调" value="借调" /></el-select></el-form-item></el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" /></el-form-item>
       </el-form>

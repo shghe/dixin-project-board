@@ -3,8 +3,8 @@
     <h2>人员工时统计报表</h2>
 
     <el-row :gutter="12" style="margin-top:12px" align="middle">
-      <el-col :span="6"><el-input-number v-model="year" :min="2020" :max="2030" @change="loadReport" /></el-col>
-      <el-col :span="12"><span style="font-size:16px;font-weight:bold">年度人员工时汇总</span></el-col>
+      <el-col :xs="24" :sm="6"><el-input-number v-model="year" :min="2020" :max="2030" @change="loadReport" /></el-col>
+      <el-col :xs="24" :sm="12"><span style="font-size:16px;font-weight:bold">年度人员工时汇总</span></el-col>
     </el-row>
 
     <el-row :gutter="16" style="margin-top:16px" v-for="item in reportItems" :key="item.employee_id">

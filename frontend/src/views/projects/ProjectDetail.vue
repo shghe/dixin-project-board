@@ -36,8 +36,8 @@
           <el-form-item label="实际金额"><b>¥{{ (contractForm.contract_amount * contractForm.discount_rate).toLocaleString() }}</b></el-form-item>
           <el-form-item label="签订日期"><el-date-picker v-model="contractForm.sign_date" type="date" /></el-form-item>
           <el-row :gutter="20">
-            <el-col :span="12"><el-form-item label="合同起草人"><el-input v-model="contractForm.drafter" /></el-form-item></el-col>
-            <el-col :span="12"><el-form-item label="审核人"><el-input v-model="contractForm.reviewer" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="合同起草人"><el-input v-model="contractForm.drafter" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="审核人"><el-input v-model="contractForm.reviewer" /></el-form-item></el-col>
           </el-row>
           <el-form-item label="付款约定"><el-input v-model="contractForm.payment_terms" type="textarea" :rows="4" /></el-form-item>
           <el-form-item><el-button type="primary" @click="saveContract">保存合同</el-button></el-form-item>
@@ -114,16 +114,16 @@
       <el-form :model="subForm" label-width="80px">
         <el-form-item label="公司名称"><el-input v-model="subForm.company_name" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="资质"><el-input v-model="subForm.qualification" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="规模"><el-input v-model="subForm.company_scale" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="资质"><el-input v-model="subForm.qualification" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="规模"><el-input v-model="subForm.company_scale" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="联系人"><el-input v-model="subForm.contact_person" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="电话"><el-input v-model="subForm.contact_phone" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="联系人"><el-input v-model="subForm.contact_person" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="电话"><el-input v-model="subForm.contact_phone" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="金额"><el-input-number v-model="subForm.amount" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="已结算"><el-input-number v-model="subForm.settled_amount" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="金额"><el-input-number v-model="subForm.amount" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="已结算"><el-input-number v-model="subForm.settled_amount" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="分包内容"><el-input v-model="subForm.content" type="textarea" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="subForm.remark" /></el-form-item>
@@ -136,8 +136,8 @@
       <el-form :model="taskForm" label-width="80px">
         <el-form-item label="任务名称"><el-input v-model="taskForm.task_name" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="开始日期"><el-date-picker v-model="taskForm.start_date" type="date" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="结束日期"><el-date-picker v-model="taskForm.end_date" type="date" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="开始日期"><el-date-picker v-model="taskForm.start_date" type="date" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="结束日期"><el-date-picker v-model="taskForm.end_date" type="date" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="工期(天)"><el-input-number v-model="taskForm.duration_days" :min="0" style="width:100%" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="taskForm.remark" /></el-form-item>
@@ -312,4 +312,18 @@ onMounted(loadAll)
 .gantt-bar-wrap { flex: 1; height: 28px; background: #f5f7fa; border-radius: 4px; position: relative; margin: 0 12px; }
 .gantt-bar { height: 100%; background: #409eff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; min-width: 40px; white-space: nowrap; }
 .gantt-actions { flex-shrink: 0; display: flex; gap: 4px; }
+
+@media (max-width: 767px) {
+  .gantt-container {
+    overflow-x: auto;
+  }
+
+  .gantt-row {
+    min-width: 640px;
+  }
+
+  .gantt-label {
+    width: 96px;
+  }
+}
 </style>

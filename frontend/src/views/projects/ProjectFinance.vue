@@ -34,7 +34,7 @@
     <!-- 财务事件 -->
     <el-card style="margin-top:16px">
       <template #header>
-        <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="card-header-row">
           <b>产值 / 开票 / 回款记录</b>
           <el-button type="primary" size="small" @click="openEventDialog()">添加记录</el-button>
         </div>
@@ -170,4 +170,16 @@ onMounted(loadAll)
 <style scoped>
 .sc { font-size: 13px; color: #909399; }
 .sv { font-size: 22px; font-weight: bold; color: #409eff; }
+.card-header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+@media (max-width: 767px) {
+  .card-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-header-row .el-button {
+    width: 100%;
+  }
+}
 </style>

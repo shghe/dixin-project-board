@@ -31,7 +31,7 @@
     <!-- 第二行：预算vs成本 + 月度趋势 -->
     <el-row :gutter="16" style="margin-top:16px">
       <!-- 预算使用率 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover">
           <template #header><span class="card-title">预算执行率</span></template>
           <div class="budget-compare">
@@ -52,7 +52,7 @@
       </el-col>
 
       <!-- 月度成本趋势 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover">
           <template #header><span class="card-title">近6个月成本趋势</span></template>
           <div class="month-bars">
@@ -71,7 +71,7 @@
     <!-- 第三行：最近项目 + 最近执行单 -->
     <el-row :gutter="16" style="margin-top:16px">
       <!-- 最近项目 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header-row">
@@ -92,7 +92,7 @@
       </el-col>
 
       <!-- 最近执行单 -->
-      <el-col :span="12">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header-row">
@@ -202,4 +202,25 @@ onMounted(async () => {
 .mb-bar { width: 100%; background: linear-gradient(0deg, #409eff, #79bbff); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.6s; }
 .mb-val { font-size: 10px; color: #909399; margin-top: 4px; }
 .mb-label { font-size: 11px; color: #c0c4cc; margin-top: 2px; }
+
+@media (max-width: 767px) {
+  .welcome-bar,
+  .card-header-row,
+  .budget-compare {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .quick-actions .el-button {
+    width: 100%;
+  }
+
+  .month-bars {
+    height: 180px;
+  }
+}
 </style>

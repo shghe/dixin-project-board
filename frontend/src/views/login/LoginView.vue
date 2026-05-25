@@ -5,10 +5,10 @@
       <p class="subtitle">华北地质勘查局第四地质大队 · 地理信息院</p>
       <el-form ref="formRef" :model="form" :rules="rules" size="large">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
+          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" autocomplete="username" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password autocomplete="current-password" @keyup.enter="handleLogin" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="loading" style="width:100%" @click="handleLogin">登 录</el-button>
@@ -43,7 +43,7 @@ async function handleLogin() {
   if (!valid) return
   loading.value = true
   try {
-    await authStore.login(form.username, form.password)
+    await authStore.login(form.username.trim(), form.password)
     router.push('/dashboard')
   } finally {
     loading.value = false

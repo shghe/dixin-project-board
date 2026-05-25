@@ -6,8 +6,8 @@
     </div>
 
     <el-row :gutter="12" style="margin-top:12px">
-      <el-col :xs="12" :sm="6"><el-input v-model="keyword" placeholder="搜索项目名称" clearable @change="loadList" /></el-col>
-      <el-col :xs="6" :sm="4">
+      <el-col :xs="24" :sm="6"><el-input v-model="keyword" placeholder="搜索项目名称" clearable @change="loadList" /></el-col>
+      <el-col :xs="24" :sm="4">
         <el-select v-model="filterStatus" placeholder="状态" clearable @change="loadList" style="width:100%">
           <el-option label="进行中" value="进行中" /><el-option label="已完成" value="已完成" /><el-option label="已暂停" value="已暂停" />
         </el-select>
@@ -46,20 +46,20 @@
         <el-form-item label="项目编号"><el-input v-model="form.project_code" :placeholder="editingId?'':'留空自动生成'" /></el-form-item>
         <el-form-item label="项目名称"><el-input v-model="form.name" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="省"><el-input v-model="form.region_province" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="市"><el-input v-model="form.region_city" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="省"><el-input v-model="form.region_province" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="市"><el-input v-model="form.region_city" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="甲方"><el-input v-model="form.party_a" /></el-form-item>
         <el-form-item label="乙方"><el-input v-model="form.party_b" /></el-form-item>
         <el-form-item label="联系人"><el-input v-model="form.contact_person" /></el-form-item>
         <el-form-item label="电话"><el-input v-model="form.contact_phone" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="资金来源">
               <el-select v-model="form.fund_source" style="width:100%"><el-option v-for="s in ['财政拨款','其他经费财政','自筹']" :key="s" :label="s" :value="s" /></el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="项目性质">
               <el-select v-model="form.project_nature" style="width:100%"><el-option v-for="s in ['工程测绘','地质勘查','其他']" :key="s" :label="s" :value="s" /></el-select>
             </el-form-item>

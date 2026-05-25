@@ -2,7 +2,7 @@
   <div class="page">
     <div class="page-header">
       <h2>每日执行单</h2>
-      <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-actions">
         <el-radio-group v-model="viewMode" size="small" @change="onViewModeChange">
           <el-radio-button value="project">项目维度</el-radio-button>
           <el-radio-button value="personnel">人员维度</el-radio-button>
@@ -11,23 +11,23 @@
       </div>
     </div>
 
-    <el-select v-model="selectedProject" placeholder="选择项目" clearable filterable style="width:260px;margin:12px 0" @change="onProjectChange">
+    <el-select v-model="selectedProject" placeholder="选择项目" clearable filterable class="project-picker" @change="onProjectChange">
       <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
     </el-select>
 
     <template v-if="selectedProject && viewMode === 'project'">
       <!-- 汇总卡片 -->
       <el-row :gutter="12" style="margin-bottom:12px">
-        <el-col :span="6">
+        <el-col :xs="24" :sm="6">
           <div class="stat-card"><div class="stat-label">累计成本</div><div class="stat-val">¥{{ (accumulated.daily_cost || 0).toLocaleString() }}</div></div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="24" :sm="6">
           <div class="stat-card"><div class="stat-label">预算总额</div><div class="stat-val blue">¥{{ totalBudget.toLocaleString() }}</div></div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="24" :sm="6">
           <div class="stat-card"><div class="stat-label">剩余预算</div><div class="stat-val" :class="budgetRemaining >= 0 ? 'green' : 'red'">¥{{ budgetRemaining.toLocaleString() }}</div></div>
         </el-col>
-        <el-col :span="6">
+        <el-col :xs="24" :sm="6">
           <div class="stat-card"><div class="stat-label">执行天数</div><div class="stat-val">{{ list.length }} 天</div></div>
         </el-col>
       </el-row>
@@ -140,11 +140,11 @@
     <el-dialog v-model="dialogVisible" :title="editingId?'编辑每日执行单':'新增每日执行单'" width="950px" top="3vh">
       <el-form :model="form" label-width="100px" size="small">
         <el-row :gutter="16">
-          <el-col :span="8"><el-form-item label="日期"><el-date-picker v-model="form.record_date" type="date" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="项目">
+          <el-col :xs="24" :sm="8"><el-form-item label="日期"><el-date-picker v-model="form.record_date" type="date" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="项目">
             <el-select v-model="form.project_id" filterable style="width:100%" :disabled="!!editingId" @change="onProjectChange"><el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" /></el-select>
           </el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="序号"><el-input-number v-model="form.seq_number" :min="1" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="序号"><el-input-number v-model="form.seq_number" :min="1" /></el-form-item></el-col>
         </el-row>
 
         <el-divider>人员投入（自动按日工资计算成本）</el-divider>
@@ -166,25 +166,25 @@
 
         <el-divider>费用登记</el-divider>
         <el-row :gutter="16">
-          <el-col :span="6"><el-form-item label="分包费"><el-input-number v-model="form.subcontract_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="相关费用"><el-input-number v-model="form.relevant_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="材料费"><el-input-number v-model="form.material_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="劳务费"><el-input-number v-model="form.labor_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="分包费"><el-input-number v-model="form.subcontract_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="相关费用"><el-input-number v-model="form.relevant_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="材料费"><el-input-number v-model="form.material_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="劳务费"><el-input-number v-model="form.labor_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="16">
-          <el-col :span="6"><el-form-item label="租赁费"><el-input-number v-model="form.rental_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="交通费"><el-input-number v-model="form.transport_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="办公费"><el-input-number v-model="form.office_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="招待费"><el-input-number v-model="form.entertainment_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="租赁费"><el-input-number v-model="form.rental_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="交通费"><el-input-number v-model="form.transport_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="办公费"><el-input-number v-model="form.office_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="招待费"><el-input-number v-model="form.entertainment_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="16">
-          <el-col :span="6"><el-form-item label="其他费用"><el-input-number v-model="form.other_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="差旅费"><el-input-number v-model="form.travel_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="招投标费"><el-input-number v-model="form.bidding_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
-          <el-col :span="6"><el-form-item label="提成"><el-input-number v-model="form.commission_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="其他费用"><el-input-number v-model="form.other_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="差旅费"><el-input-number v-model="form.travel_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="招投标费"><el-input-number v-model="form.bidding_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="提成"><el-input-number v-model="form.commission_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="16">
-          <el-col :span="6"><el-form-item label="税金"><el-input-number v-model="form.tax_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="6"><el-form-item label="税金"><el-input-number v-model="form.tax_fee" :min="0" style="width:100%" size="small" /></el-form-item></el-col>
         </el-row>
 
         <el-form-item label="工作内容"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="今日工作内容描述..." /></el-form-item>
@@ -421,6 +421,8 @@ onMounted(() => { loadData() })
 <style scoped>
 .page h2 { font-size: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.project-picker { width: 260px; margin: 12px 0; }
 
 /* 统计卡片 */
 .stat-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 6px; padding: 14px 16px; }
@@ -474,4 +476,50 @@ onMounted(() => { loadData() })
 .personnel-filters { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: #fafafa; border-radius: 6px; }
 .personnel-summary { font-size: 12px; color: #909399; margin-left: auto; }
 .personnel-summary b { color: #303133; }
+
+@media (max-width: 767px) {
+  .header-actions,
+  .personnel-filters,
+  .alert-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions .el-radio-group,
+  .header-actions .el-button,
+  .project-picker {
+    width: 100%;
+  }
+
+  .table-shell {
+    overflow: hidden;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .personnel-line {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sel-emp,
+  .inp-hours,
+  .inp-leave,
+  .cost-badge,
+  .inp-content {
+    width: 100%;
+  }
+
+  .hours-unit {
+    display: none;
+  }
+
+  .personnel-summary {
+    margin-left: 0;
+    line-height: 1.6;
+  }
+}
 </style>

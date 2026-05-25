@@ -26,7 +26,15 @@
           <van-tabbar-item icon="orders-o" to="/projects">项目</van-tabbar-item>
           <van-tabbar-item v-if="canViewExec" icon="clock-o" to="/executions">执行单</van-tabbar-item>
           <van-tabbar-item icon="user-o" to="/employees">人员</van-tabbar-item>
+          <van-tabbar-item icon="apps-o" @click="showMoreMenu = true">更多</van-tabbar-item>
         </van-tabbar>
+        <van-action-sheet
+          v-model:show="showMoreMenu"
+          :actions="mobileMenuActions"
+          cancel-text="取消"
+          close-on-click-action
+          @select="handleMobileMenuSelect"
+        />
       </div>
       <div v-else class="mobile-full">
         <router-view />
@@ -37,18 +45,40 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import SideMenu from './components/SideMenu.vue'
 import HeaderBar from './components/HeaderBar.vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const mobileActive = ref('')
+const showMoreMenu = ref(false)
 const windowWidth = ref(window.innerWidth)
 const isMobile = computed(() => windowWidth.value < 768)
 const canViewExec = computed(() => ['director','manager'].includes(authStore.user?.role||''))
+const isDirector = computed(() => authStore.user?.role === 'director')
+const mobileMenuActions = computed(() => {
+  const actions = [
+    { name: '我的工时', path: '/my-work' },
+    { name: '人员报表', path: '/reports/personnel' },
+    { name: '退出登录', path: '/login', danger: true },
+  ]
+  if (isDirector.value) {
+    actions.unshift({ name: '账号管理', path: '/users' })
+  }
+  return actions
+})
 
 const onResize = () => {
   windowWidth.value = window.innerWidth
+}
+
+function handleMobileMenuSelect(action: { path: string }) {
+  if (action.path === '/login') {
+    authStore.logout()
+  }
+  router.push(action.path)
 }
 
 onMounted(() => {

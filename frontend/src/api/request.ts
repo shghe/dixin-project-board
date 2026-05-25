@@ -7,6 +7,17 @@ const instance: AxiosInstance = axios.create({
   timeout: 30000,
 })
 
+function getAuthHeader(headers: unknown): string {
+  const headerBag = headers as Record<string, unknown> & { get?: (name: string) => unknown }
+  if (!headerBag) return ''
+  if (typeof headerBag.get === 'function') {
+    const value = headerBag.get('Authorization') ?? headerBag.get('authorization')
+    return typeof value === 'string' ? value : ''
+  }
+  const value = headerBag.Authorization ?? headerBag.authorization
+  return typeof value === 'string' ? value : ''
+}
+
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -18,12 +29,29 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status
     const msg = error.response?.data?.detail || error.message || '请求失败'
-    ElMessage.error(msg)
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+    if (status === 401) {
+      const requestAuthHeader = getAuthHeader(error.config?.headers)
+      const currentToken = localStorage.getItem('token')
+      const requestToken = requestAuthHeader.startsWith('Bearer ')
+        ? requestAuthHeader.slice(7)
+        : ''
+      const isLoginRequest = error.config?.url === '/auth/login'
+      const isStaleAuthRequest = Boolean(requestToken && currentToken && requestToken !== currentToken)
+
+      if (isLoginRequest) {
+        ElMessage.error(msg)
+      } else if (!isStaleAuthRequest) {
+        ElMessage.error(msg)
+        localStorage.removeItem('token')
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
+      }
+      return Promise.reject(error)
     }
+    ElMessage.error(msg)
     return Promise.reject(error)
   }
 )

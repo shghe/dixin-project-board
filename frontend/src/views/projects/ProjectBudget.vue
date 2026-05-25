@@ -15,41 +15,41 @@
       <el-tab-pane label="项目概况" name="summary">
         <el-form :model="summary" label-width="120px" size="small" :disabled="!canEdit">
           <el-row :gutter="16">
-            <el-col :span="12"><el-form-item label="工程名称"><el-input v-model="summary.project_name" /></el-form-item></el-col>
-            <el-col :span="12"><el-form-item label="甲方全称"><el-input v-model="summary.party_a" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="工程名称"><el-input v-model="summary.project_name" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="甲方全称"><el-input v-model="summary.party_a" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="12"><el-form-item label="通讯地址"><el-input v-model="summary.address" /></el-form-item></el-col>
-            <el-col :span="12"><el-form-item label="工程所在地"><el-input v-model="summary.location" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="通讯地址"><el-input v-model="summary.address" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="工程所在地"><el-input v-model="summary.location" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="6"><el-form-item label="开工日期"><el-input v-model="summary.start_date" /></el-form-item></el-col>
-            <el-col :span="6"><el-form-item label="竣工日期"><el-input v-model="summary.end_date" /></el-form-item></el-col>
-            <el-col :span="6"><el-form-item label="计划工期"><el-input v-model="summary.planned_duration" /></el-form-item></el-col>
-            <el-col :span="6"><el-form-item label="签订日期"><el-input v-model="summary.contract_sign_date" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="6"><el-form-item label="开工日期"><el-input v-model="summary.start_date" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="6"><el-form-item label="竣工日期"><el-input v-model="summary.end_date" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="6"><el-form-item label="计划工期"><el-input v-model="summary.planned_duration" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="6"><el-form-item label="签订日期"><el-input v-model="summary.contract_sign_date" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="8"><el-form-item label="合同额"><el-input-number v-model="summary.contract_amount" :min="0" style="width:100%" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="税率"><el-input-number v-model="summary.tax_rate" :min="0" :max="1" :step="0.01" style="width:100%" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="合同额"><el-input-number v-model="summary.contract_amount" :min="0" style="width:100%" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="税率"><el-input-number v-model="summary.tax_rate" :min="0" :max="1" :step="0.01" style="width:100%" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="12"><el-form-item label="项目经理"><el-input v-model="summary.project_manager" /></el-form-item></el-col>
-            <el-col :span="12"><el-form-item label="技术负责"><el-input v-model="summary.tech_lead" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="项目经理"><el-input v-model="summary.project_manager" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="技术负责"><el-input v-model="summary.tech_lead" /></el-form-item></el-col>
           </el-row>
           <el-form-item label="编制依据"><el-input v-model="summary.compilation_basis" type="textarea" :rows="2" /></el-form-item>
           <el-form-item label="施工条件"><el-input v-model="summary.construction_conditions" type="textarea" :rows="3" /></el-form-item>
           <el-form-item label="工作内容"><el-input v-model="summary.work_content" type="textarea" :rows="3" /></el-form-item>
           <el-form-item label="其他"><el-input v-model="summary.other_info" type="textarea" :rows="2" /></el-form-item>
           <el-row :gutter="16">
-            <el-col :span="8"><el-form-item label="填表"><el-input v-model="summary.drafter" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="校核"><el-input v-model="summary.checker" /></el-form-item></el-col>
-            <el-col :span="8"><el-form-item label="审核"><el-input v-model="summary.reviewer" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="填表"><el-input v-model="summary.drafter" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="校核"><el-input v-model="summary.checker" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="审核"><el-input v-model="summary.reviewer" /></el-form-item></el-col>
           </el-row>
           <el-button type="primary" @click="saveSummary" :loading="saving" v-if="canEdit">保存概况</el-button>
         </el-form>
@@ -59,7 +59,7 @@
       <el-tab-pane label="总表" name="rollup">
         <div v-loading="loadingRollup">
           <el-row :gutter="12" style="margin-bottom:12px">
-            <el-col :span="6"><div class="stat-card"><div class="stat-label">预算总额</div><div class="stat-val">¥{{ rollup?.total?.toLocaleString() || 0 }}</div></div></el-col>
+            <el-col :xs="24" :sm="6"><div class="stat-card"><div class="stat-label">预算总额</div><div class="stat-val">¥{{ rollup?.total?.toLocaleString() || 0 }}</div></div></el-col>
           </el-row>
           <el-table :data="flatRollup" border size="small" row-key="key" default-expand-all>
             <el-table-column label="科目" min-width="300">
@@ -240,23 +240,23 @@
     <el-dialog v-model="dlg.personnel" title="人工费明细" width="700px">
       <el-form :model="fPersonnel" label-width="100px" size="small">
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="类别"><el-select v-model="fPersonnel.category"><el-option label="事业编人员" value="事业编人员" /><el-option label="企业编人员" value="企业编人员" /></el-select></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="岗位"><el-input v-model="fPersonnel.position" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="姓名"><el-input v-model="fPersonnel.employee_name" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="类别"><el-select v-model="fPersonnel.category"><el-option label="事业编人员" value="事业编人员" /><el-option label="企业编人员" value="企业编人员" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="岗位"><el-input v-model="fPersonnel.position" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="姓名"><el-input v-model="fPersonnel.employee_name" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="基本工资"><el-input-number v-model="fPersonnel.base_salary" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="绩效"><el-input-number v-model="fPersonnel.performance" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="野外津贴"><el-input-number v-model="fPersonnel.field_allowance" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="基本工资"><el-input-number v-model="fPersonnel.base_salary" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="绩效"><el-input-number v-model="fPersonnel.performance" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="野外津贴"><el-input-number v-model="fPersonnel.field_allowance" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="防暑降温"><el-input-number v-model="fPersonnel.heat_prevention" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="工会经费"><el-input-number v-model="fPersonnel.union_fee" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单位统筹"><el-input-number v-model="fPersonnel.unit_coordination" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="防暑降温"><el-input-number v-model="fPersonnel.heat_prevention" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="工会经费"><el-input-number v-model="fPersonnel.union_fee" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单位统筹"><el-input-number v-model="fPersonnel.unit_coordination" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="工作月"><el-input-number v-model="fPersonnel.work_months" :min="0" :step="0.1" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="野外月"><el-input-number v-model="fPersonnel.field_months" :min="0" :step="0.1" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="工作月"><el-input-number v-model="fPersonnel.work_months" :min="0" :step="0.1" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="野外月"><el-input-number v-model="fPersonnel.field_months" :min="0" :step="0.1" style="width:100%" /></el-form-item></el-col>
         </el-row>
       </el-form>
       <template #footer><el-button @click="dlg.personnel=false" size="small">取消</el-button><el-button type="primary" @click="savePersonnel" :loading="saving" size="small">确定</el-button></template>
@@ -266,17 +266,17 @@
     <el-dialog v-model="dlg.material" title="材料费" width="580px">
       <el-form :model="fMaterial" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="科目"><el-select v-model="fMaterial.category" filterable allow-create><el-option v-for="c in ['原材料','专用材料费','燃油','技术资料费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="名称"><el-input v-model="fMaterial.name" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="科目"><el-select v-model="fMaterial.category" filterable allow-create><el-option v-for="c in ['原材料','专用材料费','燃油','技术资料费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="名称"><el-input v-model="fMaterial.name" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="型号"><el-input v-model="fMaterial.model" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单位"><el-input v-model="fMaterial.unit" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单价"><el-input-number v-model="fMaterial.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="型号"><el-input v-model="fMaterial.model" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单位"><el-input v-model="fMaterial.unit" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单价"><el-input-number v-model="fMaterial.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="数量"><el-input-number v-model="fMaterial.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="金额"><span>¥{{ (fMaterial.unit_price * fMaterial.quantity).toLocaleString() }}</span></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="数量"><el-input-number v-model="fMaterial.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="金额"><span>¥{{ (fMaterial.unit_price * fMaterial.quantity).toLocaleString() }}</span></el-form-item></el-col>
         </el-row>
         <el-form-item label="说明"><el-input v-model="fMaterial.remark" /></el-form-item>
       </el-form>
@@ -286,17 +286,17 @@
     <el-dialog v-model="dlg.equipment" title="机械使用费" width="580px">
       <el-form :model="fEquipment" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="分类"><el-input v-model="fEquipment.classification" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="内容"><el-input v-model="fEquipment.content" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="分类"><el-input v-model="fEquipment.classification" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="内容"><el-input v-model="fEquipment.content" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="对方单位"><el-input v-model="fEquipment.counterparty" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="型号"><el-input v-model="fEquipment.model" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="对方单位"><el-input v-model="fEquipment.counterparty" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="型号"><el-input v-model="fEquipment.model" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="单价"><el-input-number v-model="fEquipment.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="数量"><el-input-number v-model="fEquipment.quantity" :min="1" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="金额"><span>¥{{ (fEquipment.unit_price * fEquipment.quantity).toLocaleString() }}</span></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单价"><el-input-number v-model="fEquipment.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="数量"><el-input-number v-model="fEquipment.quantity" :min="1" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="金额"><span>¥{{ (fEquipment.unit_price * fEquipment.quantity).toLocaleString() }}</span></el-form-item></el-col>
         </el-row>
       </el-form>
       <template #footer><el-button @click="dlg.equipment=false" size="small">取消</el-button><el-button type="primary" @click="saveEquipment" :loading="saving" size="small">确定</el-button></template>
@@ -305,13 +305,13 @@
     <el-dialog v-model="dlg.dc" title="其他直接费" width="580px">
       <el-form :model="fDC" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="科目"><el-select v-model="fDC.category" filterable allow-create><el-option v-for="c in ['运输费','装卸费','试验检测费','维修(护)费','办公费','出版印刷费','水电费','邮电费','取暖费','交通费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="内容"><el-input v-model="fDC.content" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="科目"><el-select v-model="fDC.category" filterable allow-create><el-option v-for="c in ['运输费','装卸费','试验检测费','维修(护)费','办公费','出版印刷费','水电费','邮电费','取暖费','交通费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="内容"><el-input v-model="fDC.content" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="单位"><el-input v-model="fDC.unit" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单价"><el-input-number v-model="fDC.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="数量"><el-input-number v-model="fDC.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单位"><el-input v-model="fDC.unit" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单价"><el-input-number v-model="fDC.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="数量"><el-input-number v-model="fDC.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="说明"><el-input v-model="fDC.remark" /></el-form-item>
       </el-form>
@@ -321,17 +321,17 @@
     <el-dialog v-model="dlg.labor" title="劳务费" width="580px">
       <el-form :model="fLabor" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="类别"><el-select v-model="fLabor.category"><el-option label="临时聘用人员" value="临时聘用人员" /><el-option label="野外雇工" value="野外雇工" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="岗位"><el-input v-model="fLabor.position" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="类别"><el-select v-model="fLabor.category"><el-option label="临时聘用人员" value="临时聘用人员" /><el-option label="野外雇工" value="野外雇工" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="岗位"><el-input v-model="fLabor.position" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="姓名"><el-input v-model="fLabor.employee_name" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单位"><el-input v-model="fLabor.unit" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="姓名"><el-input v-model="fLabor.employee_name" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单位"><el-input v-model="fLabor.unit" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="单价"><el-input-number v-model="fLabor.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="数量"><el-input-number v-model="fLabor.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="金额"><span>¥{{ (fLabor.unit_price * fLabor.quantity).toLocaleString() }}</span></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单价"><el-input-number v-model="fLabor.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="数量"><el-input-number v-model="fLabor.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="金额"><span>¥{{ (fLabor.unit_price * fLabor.quantity).toLocaleString() }}</span></el-form-item></el-col>
         </el-row>
         <el-form-item label="说明"><el-input v-model="fLabor.remark" /></el-form-item>
       </el-form>
@@ -341,14 +341,14 @@
     <el-dialog v-model="dlg.subcontract" title="分包工程款" width="580px">
       <el-form :model="fSub" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="类别"><el-select v-model="fSub.category"><el-option v-for="c in ['工程分包费','劳务分包费','委托技术服务费','委托试验费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="项目"><el-input v-model="fSub.item_name" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="类别"><el-select v-model="fSub.category"><el-option v-for="c in ['工程分包费','劳务分包费','委托技术服务费','委托试验费']" :key="c" :label="c" :value="c" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="项目"><el-input v-model="fSub.item_name" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12"><el-col :span="24"><el-form-item label="对方单位"><el-input v-model="fSub.counterparty" /></el-form-item></el-col></el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="工作量"><el-input-number v-model="fSub.workload" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="单价"><el-input-number v-model="fSub.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="金额"><span>¥{{ (fSub.unit_price * fSub.workload).toLocaleString() }}</span></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="工作量"><el-input-number v-model="fSub.workload" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单价"><el-input-number v-model="fSub.unit_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="金额"><span>¥{{ (fSub.unit_price * fSub.workload).toLocaleString() }}</span></el-form-item></el-col>
         </el-row>
         <el-form-item label="说明"><el-input v-model="fSub.remark" /></el-form-item>
       </el-form>
@@ -358,13 +358,13 @@
     <el-dialog v-model="dlg.rdother" title="研发/其他费用" width="580px">
       <el-form :model="fRDOther" label-width="80px" size="small">
         <el-row :gutter="12">
-          <el-col :span="12"><el-form-item label="分组"><el-select v-model="fRDOther.cost_group"><el-option label="研发费用" value="研发费用" /><el-option label="其他管理费" value="其他管理费" /><el-option label="其他工料费" value="其他工料费" /></el-select></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="项目"><el-input v-model="fRDOther.item" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="分组"><el-select v-model="fRDOther.cost_group"><el-option label="研发费用" value="研发费用" /><el-option label="其他管理费" value="其他管理费" /><el-option label="其他工料费" value="其他工料费" /></el-select></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="项目"><el-input v-model="fRDOther.item" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="8"><el-form-item label="单位"><el-input v-model="fRDOther.unit" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="基价"><el-input-number v-model="fRDOther.base_price" :min="0" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="数量"><el-input-number v-model="fRDOther.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="单位"><el-input v-model="fRDOther.unit" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="基价"><el-input-number v-model="fRDOther.base_price" :min="0" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="8"><el-form-item label="数量"><el-input-number v-model="fRDOther.quantity" :min="0" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="fRDOther.remark" /></el-form-item>
       </el-form>
