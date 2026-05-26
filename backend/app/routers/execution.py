@@ -19,6 +19,16 @@ from app.schemas.execution import (
 
 router = APIRouter(prefix="/api/executions", tags=["每日执行单"])
 
+
+async def _check_project_manager(project_id: str, user: User, db: AsyncSession):
+    """验证当前用户是否是指定项目的被任命项目经理（院长/副院长也需被任命）"""
+    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    project = proj_result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    if project.manager_id != user.id:
+        raise HTTPException(status_code=403, detail="仅本项目被任命的项目经理可操作")
+
 # 费用科目字段名与中文标签映射
 FEE_FIELDS = [
     ("inhouse_personnel", "事业人员"),
@@ -176,6 +186,10 @@ async def list_executions(
     current_user: User = Depends(require_role("director", "manager")),
 ):
     """项目经理和院长查看每日执行单流水"""
+    # 非院长/副院长只看自己被任命为项目经理的项目
+    if current_user.role not in ("院长", "副院长") and project_id:
+        await _check_project_manager(project_id, current_user, db)
+
     query = select(DailyExecution).options(
         joinedload(DailyExecution.project),
         joinedload(DailyExecution.details).joinedload(ExecutionDetail.employee),
@@ -268,6 +282,9 @@ async def personnel_daily_work(
     current_user: User = Depends(require_role("director", "manager")),
 ):
     """返回按人分组的每日工作情况（院长/管理员/项目经理），支持按员工、年月、日期范围筛选"""
+    if current_user.role not in ("院长", "副院长") and project_id:
+        await _check_project_manager(project_id, current_user, db)
+
     query = (
         select(ExecutionDetail, DailyExecution, Employee, Project.name)
         .join(DailyExecution, ExecutionDetail.execution_id == DailyExecution.id)
@@ -333,6 +350,7 @@ async def create_execution(
     current_user: User = Depends(require_role("manager")),
 ):
     """项目经理填写每日执行单"""
+    await _check_project_manager(data.project_id, current_user, db)
     # 预加载员工信息
     emp_ids = [d.employee_id for d in data.details]
     emp_map = {}
@@ -402,12 +420,11 @@ async def update_execution(
 ):
     """项目经理编辑执行单"""
     result = await db.execute(
-        select(DailyExecution).options(
-            joinedload(DailyExecution.details).joinedload(ExecutionDetail.employee),
-        ).where(DailyExecution.id == exec_id)
+        select(DailyExecution).where(DailyExecution.id == exec_id).options(joinedload(DailyExecution.details).joinedload(ExecutionDetail.employee))
     )
     exec = result.unique().scalar_one_or_none()
     if not exec: raise HTTPException(status_code=404, detail="记录不存在")
+    await _check_project_manager(exec.project_id, current_user, db)
 
     emp_ids = [d.employee_id for d in data.details]
     emp_map = {}
@@ -490,6 +507,8 @@ async def get_execution(
     )
     r = result.unique().scalar_one_or_none()
     if not r: raise HTTPException(status_code=404, detail="记录不存在")
+    if current_user.role not in ("院长", "副院长"):
+        await _check_project_manager(r.project_id, current_user, db)
     return _execution_to_response(r)
 
 
