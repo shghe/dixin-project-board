@@ -24,6 +24,7 @@
         </el-form-item>
       </el-form>
       <p v-if="showHint" class="hint">测试账号：{{ defaultUsername }} / {{ defaultPassword }}</p>
+      <p class="version">v1.2.0</p>
     </div>
   </div>
 </template>
@@ -118,6 +119,12 @@ h1 {
   color: #c0c4cc;
   font-size: 12px;
   margin-top: 8px;
+}
+.version {
+  text-align: center;
+  color: #c0c4cc;
+  font-size: 12px;
+  margin-top: 16px;
 }
 .captcha-row {
   display: flex;
