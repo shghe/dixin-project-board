@@ -21,12 +21,12 @@ router = APIRouter(prefix="/api/executions", tags=["每日执行单"])
 
 
 async def _check_project_manager(project_id: str, user: User, db: AsyncSession):
-    """验证当前用户是否是指定项目的被任命项目经理（院长/副院长也需被任命）"""
+    """验证当前用户是否是指定项目的被任命项目经理（project.manager_id → Employee.id）"""
     proj_result = await db.execute(select(Project).where(Project.id == project_id))
     project = proj_result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    if project.manager_id != user.id:
+    if project.manager_id != user.employee_id:
         raise HTTPException(status_code=403, detail="仅本项目被任命的项目经理可操作")
 
 # 费用科目字段名与中文标签映射

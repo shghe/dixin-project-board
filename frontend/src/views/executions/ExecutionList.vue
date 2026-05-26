@@ -12,7 +12,7 @@
     </div>
 
     <el-select v-model="selectedProject" placeholder="选择项目" clearable filterable class="project-picker" @change="onProjectChange">
-      <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
+      <el-option v-for="p in availableProjects" :key="p.id" :label="p.name" :value="p.id" />
     </el-select>
 
     <template v-if="selectedProject && viewMode === 'project'">
@@ -211,14 +211,19 @@ import type { EmployeeItem } from '@/api/employees'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+// 只有项目的被任命经理可以新增/编辑执行单（manager_id对应Employee.id）
 const isManager = computed(() => {
-  if (!authStore.user) return false
-  // 院长、副院长可以管理所有项目
-  if (['院长', '副院长'].includes(authStore.user.role || '')) return true
-  // 项目经理只能管理自己被任命为项目经理的项目
-  if (!selectedProject.value) return false
+  if (!authStore.user || !selectedProject.value) return false
   const project = projects.value.find(p => p.id === selectedProject.value)
-  return project?.manager_id === authStore.user.id
+  return project?.manager_id === authStore.user.employee_id
+})
+
+// 院长/副院长可查看所有项目；项目经理只能看到自己被任命管理的项目
+const availableProjects = computed(() => {
+  const user = authStore.user
+  if (!user) return []
+  if (['院长', '副院长'].includes(user.role || '')) return projects.value
+  return projects.value.filter(p => p.manager_id === user.employee_id)
 })
 
 const feeColumns = [
