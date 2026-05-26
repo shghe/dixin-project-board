@@ -55,12 +55,14 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         current_user: User = Depends(require_role("director", "manager")),
     ):
         vals = data.model_dump()
-        # 自动计算
+        # 自动计算（匹配 DX20260411测绘预算.xlsx 公式）
         if entity_name == "personnel":
-            vals["salary_subtotal"] = round(vals.get("base_salary", 0) + vals.get("performance", 0) + vals.get("field_allowance", 0), 2)
-            vals["welfare_subtotal"] = vals.get("heat_prevention", 0)
-            vals["coordination_subtotal"] = vals.get("unit_coordination", 0)
-            vals["union_subtotal"] = vals.get("union_fee", 0)
+            wm = vals.get("work_months", 0) or 0
+            fm = vals.get("field_months", 0) or 0
+            vals["salary_subtotal"] = round((vals.get("base_salary", 0) + vals.get("performance", 0)) * wm + vals.get("field_allowance", 0) * fm, 2)
+            vals["welfare_subtotal"] = round(vals.get("heat_prevention", 0) * wm, 2)
+            vals["coordination_subtotal"] = round(vals.get("unit_coordination", 0) * wm, 2)
+            vals["union_subtotal"] = round(vals.get("union_fee", 0) * wm, 2)
             vals["total"] = round(vals["salary_subtotal"] + vals["welfare_subtotal"] + vals["coordination_subtotal"] + vals["union_subtotal"], 2)
         elif entity_name in ("material", "direct_cost", "labor", "equipment"):
             vals["amount"] = round(vals.get("unit_price", 0) * vals.get("quantity", 0), 2)
@@ -86,12 +88,14 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         if not item: raise HTTPException(status_code=404, detail="记录不存在")
 
         vals = data.model_dump()
-        # 自动计算
+        # 自动计算（匹配 DX20260411测绘预算.xlsx 公式）
         if entity_name == "personnel":
-            vals["salary_subtotal"] = round(vals.get("base_salary", 0) + vals.get("performance", 0) + vals.get("field_allowance", 0), 2)
-            vals["welfare_subtotal"] = vals.get("heat_prevention", 0)
-            vals["coordination_subtotal"] = vals.get("unit_coordination", 0)
-            vals["union_subtotal"] = vals.get("union_fee", 0)
+            wm = vals.get("work_months", 0) or 0
+            fm = vals.get("field_months", 0) or 0
+            vals["salary_subtotal"] = round((vals.get("base_salary", 0) + vals.get("performance", 0)) * wm + vals.get("field_allowance", 0) * fm, 2)
+            vals["welfare_subtotal"] = round(vals.get("heat_prevention", 0) * wm, 2)
+            vals["coordination_subtotal"] = round(vals.get("unit_coordination", 0) * wm, 2)
+            vals["union_subtotal"] = round(vals.get("union_fee", 0) * wm, 2)
             vals["total"] = round(vals["salary_subtotal"] + vals["welfare_subtotal"] + vals["coordination_subtotal"] + vals["union_subtotal"], 2)
         elif entity_name in ("material", "direct_cost", "labor", "equipment"):
             vals["amount"] = round(vals.get("unit_price", 0) * vals.get("quantity", 0), 2)
@@ -352,6 +356,21 @@ async def get_budget_rollup(
 
     # 总工程费用 = 工程施工 + 研发 + 其他
     engineering_total = construction_total + rd_total + other_total
+
+    # 税务计算（匹配 Excel 公式）
+    sum_result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
+    summary = sum_result.scalar_one_or_none()
+    tax_rate = summary.tax_rate if summary else 0
+    contract_amount = summary.contract_amount if summary else 0
+    han_shui = contract_amount
+    xiao_xiang = round(han_shui / (1 + tax_rate) * tax_rate, 2) if tax_rate > 0 else 0
+    jin_xiang = 0  # 可抵扣进项增值税
+    ying_jiao = round(xiao_xiang - jin_xiang, 2)
+    fu_jia = round(ying_jiao * 0.12, 2)
+    gong_cheng_cb = round(construction_total + fu_jia, 2)
+    shui_hou_sr = round(han_shui / (1 + tax_rate), 2) if tax_rate > 0 else han_shui
+    mao_li_run = round(shui_hou_sr - gong_cheng_cb, 2)
+
     total_items = [
         BudgetRollupItem(level=1, code="一", name="工程施工", amount=round(construction_total, 2), children=items),
     ]
@@ -360,7 +379,19 @@ async def get_budget_rollup(
     if other_total > 0:
         total_items.append(BudgetRollupItem(level=1, code="二", name="其他费用", amount=round(other_total, 2)))
 
-    return BudgetRollupResponse(total=round(engineering_total, 2), items=total_items)
+    # 税务行
+    total_items.append(BudgetRollupItem(level=1, code="三", name=f"销项增值税（含税合同额/{1+tax_rate}×{tax_rate}）", amount=xiao_xiang))
+    total_items.append(BudgetRollupItem(level=1, code="四", name="可抵扣进项增值税合计", amount=jin_xiang))
+    total_items.append(BudgetRollupItem(level=1, code="五", name="应缴税额", amount=ying_jiao))
+    total_items.append(BudgetRollupItem(level=1, code="六", name="附加税（×12%）", amount=fu_jia))
+    total_items.append(BudgetRollupItem(level=1, code="七", name="工程成本费用", amount=gong_cheng_cb))
+    total_items.append(BudgetRollupItem(level=1, code="八", name="税后收入", amount=shui_hou_sr))
+    total_items.append(BudgetRollupItem(level=1, code="九", name="工程预算毛利润", amount=mao_li_run))
+
+    return BudgetRollupResponse(total=round(engineering_total, 2), contract_amount=han_shui, tax_rate=tax_rate,
+                                xiao_xiang=xiao_xiang, jin_xiang=jin_xiang, ying_jiao=ying_jiao,
+                                fu_jia=fu_jia, gong_cheng_cb=gong_cheng_cb, shui_hou_sr=shui_hou_sr, mao_li_run=mao_li_run,
+                                items=total_items)
 
 
 # ============================================================

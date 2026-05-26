@@ -248,4 +248,13 @@ class BudgetRollupItem(BaseModel):
 
 class BudgetRollupResponse(BaseModel):
     total: float
+    contract_amount: float = 0
+    tax_rate: float = 0
+    xiao_xiang: float = 0
+    jin_xiang: float = 0
+    ying_jiao: float = 0
+    fu_jia: float = 0
+    gong_cheng_cb: float = 0
+    shui_hou_sr: float = 0
+    mao_li_run: float = 0
     items: list[BudgetRollupItem]

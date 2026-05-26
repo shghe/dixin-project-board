@@ -59,7 +59,12 @@
       <el-tab-pane label="总表" name="rollup">
         <div v-loading="loadingRollup">
           <el-row :gutter="12" style="margin-bottom:12px">
-            <el-col :xs="24" :sm="6"><div class="stat-card"><div class="stat-label">预算总额</div><div class="stat-val">¥{{ rollup?.total?.toLocaleString() || 0 }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">工程总费用</div><div class="stat-val">¥{{ rollup?.total?.toLocaleString() || 0 }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">含税合同额</div><div class="stat-val">¥{{ (rollup?.contract_amount || 0).toLocaleString() }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">应缴税额</div><div class="stat-val">¥{{ (rollup?.ying_jiao || 0).toLocaleString() }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">附加税</div><div class="stat-val">¥{{ (rollup?.fu_jia || 0).toLocaleString() }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">工程成本</div><div class="stat-val">¥{{ (rollup?.gong_cheng_cb || 0).toLocaleString() }}</div></div></el-col>
+            <el-col :xs="12" :sm="4"><div class="stat-card" :class="{ 'profit-positive': (rollup?.mao_li_run || 0) > 0, 'profit-negative': (rollup?.mao_li_run || 0) < 0 }"><div class="stat-label">毛利润</div><div class="stat-val">¥{{ (rollup?.mao_li_run || 0).toLocaleString() }}</div></div></el-col>
           </el-row>
           <el-table :data="flatRollup" border size="small" row-key="key" default-expand-all>
             <el-table-column label="科目" min-width="300">
@@ -709,4 +714,6 @@ onMounted(async () => {
 .stat-label { font-size: 12px; color: #909399; margin-bottom: 6px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #303133; }
 .auto-hint { font-size: 11px; color: #909399; margin-left: 4px; white-space: nowrap; }
+.profit-positive .stat-val { color: #67c23a; }
+.profit-negative .stat-val { color: #f56c6c; }
 </style>

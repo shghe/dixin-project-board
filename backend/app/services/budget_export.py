@@ -33,7 +33,9 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         BudgetSubcontract, BudgetRDOther,
     )
     from app.models import Project
+    from app.models.contract import Contract
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
     wb = Workbook()
 
@@ -42,33 +44,43 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     sum_result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
     s = sum_result.scalar_one_or_none()
 
-    # Project
-    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    # Project (with manager)
+    proj_result = await db.execute(
+        select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
+    )
     project = proj_result.scalar_one_or_none()
 
-    project_name = s.project_name if s and s.project_name else (project.name if project else "")
-    party_a = s.party_a if s else ""
-    contact_person = s.contact_person if s else ""
-    contact_phone = s.contact_phone if s else ""
+    # Contract
+    contract_result = await db.execute(select(Contract).where(Contract.project_id == project_id))
+    contract = contract_result.scalar_one_or_none()
+
+    # 合并数据：项目信息 + 合同信息 + 预算特有字段
+    project_name = project.name if project else (s.project_name if s else "")
+    party_a = project.party_a if project else (s.party_a if s else "")
+    contact_person = project.contact_person if project else (s.contact_person if s else "")
+    contact_phone = project.contact_phone if project else (s.contact_phone if s else "")
+    manager = project.manager.name if project and project.manager else (s.project_manager if s else "")
+
+    contract_no = contract.contract_no if contract else (s.contract_no if s else "")
+    contract_amount = contract.contract_amount if contract else (s.contract_amount if s else 0)
+    sign_date = str(contract.sign_date) if contract and contract.sign_date else (s.contract_sign_date if s else "")
+    drafter = contract.drafter if contract else (s.drafter if s else "")
+    reviewer = contract.reviewer if contract else (s.reviewer if s else "")
+
+    # 预算特有字段（仅从 BudgetSummary 取）
     address = s.address if s else ""
     location = s.location if s else ""
     start_date = s.start_date if s else ""
     end_date = s.end_date if s else ""
     duration = s.planned_duration if s else ""
-    contract_amount = s.contract_amount if s else 0
     tax_rate = s.tax_rate if s else 0
-    contract_no = s.contract_no if s else ""
-    sign_date = s.contract_sign_date if s else ""
     unit = s.implementing_unit if s else ""
-    manager = s.project_manager if s else (project.manager.name if project and project.manager else "")
     tech = s.tech_lead if s else ""
     basis = s.compilation_basis if s else ""
     conditions = s.construction_conditions if s else ""
     work_content = s.work_content if s else ""
     other_info = s.other_info if s else ""
-    drafter = s.drafter if s else ""
     checker = s.checker if s else ""
-    reviewer = s.reviewer if s else ""
 
     # 人工费
     pers_result = await db.execute(select(BudgetPersonnel).where(BudgetPersonnel.project_id == project_id).order_by(BudgetPersonnel.sort_order))
@@ -146,21 +158,20 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ws1[cell_ref].font = normal_font
         ws1[cell_ref].alignment = left_align
 
-    # ====== Sheet 2: 总表 ======
+    # ====== Sheet 2: 总表 (匹配 Excel 模板格式) ======
     ws2 = wb.create_sheet("总表")
-    for i, w in enumerate([3, 5, 24, 14, 14], 1):
+    for i, w in enumerate([3, 5, 28, 12, 8, 14], 1):
         ws2.column_dimensions[get_column_letter(i)].width = w
 
-    ws2.merge_cells("A1:E1")
+    ws2.merge_cells("A1:F1")
     ws2["A1"] = "项目成本费用预算总表"; ws2["A1"].font = title_font; ws2["A1"].alignment = center_align
 
-    headers2 = ["", "工  作  内  容", "金额", "备 注", "税率"]
+    headers2 = ["", "工  作  内  容", "金额", "备 注", "税率", "可抵扣增值税"]
     for i, h in enumerate(headers2, 1):
         cell = ws2.cell(row=2, column=i, value=h)
         cell.font = header_font; cell.alignment = center_align; cell.fill = header_fill; cell.border = thin_border
 
     # 计算汇总
-    # 人工费
     salary_total = sum(p.salary_subtotal for p in personnel_list)
     welfare_total = sum(p.welfare_subtotal for p in personnel_list)
     coord_total = sum(p.coordination_subtotal for p in personnel_list)
@@ -168,18 +179,26 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     personnel_total = sum(p.total for p in personnel_list)
 
     mat_total = sum(m.amount for m in mat_list)
+    mat_yuan = sum(m.amount for m in mat_list if m.category in ("原材料",))
+    mat_zhuan = sum(m.amount for m in mat_list if m.category in ("专用材料费", "专用材料"))
+    mat_ran = sum(m.amount for m in mat_list if m.category in ("燃油", "燃油费"))
+    mat_tech = sum(m.amount for m in mat_list if m.category in ("技术资料费", "技术资料"))
+
     equip_total = sum(e.amount for e in equip_list)
 
-    # 其他直接费 按科目
     def dc_sum(cat):
         return sum(d.amount for d in dc_list if d.category == cat)
+
     labor_total2 = sum(l.amount for l in labor_list)
-    sub_total = sum(s.amount for s in sub_list)
-    dc_items = [
+    sub_total = sum(s2.amount for s2 in sub_list)
+
+    dc_all = [
         ("运输费", dc_sum("运输费")),
         ("装卸费", dc_sum("装卸费")),
         ("检验试验费", dc_sum("试验检测费")),
         ("维修（护）费", dc_sum("维修(护)费") + dc_sum("维修费")),
+        ("劳务费", labor_total2),
+        ("分包工程款", sub_total),
         ("办公费", dc_sum("办公费")),
         ("出版印刷费", dc_sum("出版印刷费")),
         ("水电费", dc_sum("水电费")),
@@ -187,75 +206,72 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ("取暖费", dc_sum("取暖费")),
         ("交通费", dc_sum("交通费")),
     ]
-    dc_total = sum(a for _, a in dc_items) + labor_total2 + sub_total
+    dc_total = sum(a for _, a in dc_all)
+
     construction_total = personnel_total + mat_total + equip_total + dc_total
     rd_total = sum(r.amount for r in rd_list)
     other_total2 = sum(o.amount for o in other_list)
 
+    # 税务计算（匹配 Excel 公式）
+    han_shui_hetong = contract_amount  # 含税合同额
+    shui_lv = tax_rate  # 税率
+    xiao_xiang = round(han_shui_hetong / (1 + shui_lv) * shui_lv, 2) if shui_lv > 0 else 0  # 销项增值税
+    jin_xiang = 0  # 可抵扣进项增值税（简化，实际需按各项计算）
+    ying_jiao = round(xiao_xiang - jin_xiang, 2)  # 应缴税额
+    fu_jia = round(ying_jiao * 0.12, 2)  # 附加税
+    gong_cheng_cb = round(construction_total + fu_jia, 2)  # 工程成本费用
+    shui_hou_sr = round(han_shui_hetong / (1 + shui_lv), 2) if shui_lv > 0 else han_shui_hetong  # 税后收入
+    mao_li_run = round(shui_hou_sr - gong_cheng_cb, 2)  # 毛利润
+    li_run_lv = round(mao_li_run / shui_hou_sr, 4) if shui_hou_sr > 0 else 0  # 利润率
+
     row = 3
-    tree_data = [
-        (0, "一、工程施工", construction_total, "", ""),
-        (1, "1.1人工费", personnel_total, "附明细", ""),
-        (2, "⑴职工薪酬", round(salary_total, 2), "", ""),
-        (2, "⑵职工福利费", round(welfare_total, 2), "", ""),
-        (2, "⑶单位统筹", round(coord_total, 2), "", ""),
-        (2, "⑷工会经费", round(union_total, 2), "", ""),
-        (1, "2.1材料费", mat_total, "", ""),
-        (2, "⑴原材料", round(mat_by_cat.get("原材料", [{}])[0] if "原材料" in mat_by_cat else sum(getattr(m, 'amount', 0) for m in mat_by_cat.get("原材料", [])), 2), "", ""),
-        (1, "3.1机械使用费", equip_total, "", ""),
-        (2, "⑴设备租赁费", equip_total, "", ""),
-        (1, "4.1其他直接费", dc_total, "附明细", ""),
+    total_rows = [
+        (0, "一、工程施工", construction_total, "", "", ""),
+        (1, "1.1人工费", personnel_total, "附明细", "", ""),
+        (2, "   职工薪酬", round(salary_total, 2), "", "", ""),
+        (2, "   职工福利费", round(welfare_total, 2), "", "", ""),
+        (2, "   单位统筹", round(coord_total, 2), "", "", ""),
+        (2, "   工会经费", round(union_total, 2), "", "", ""),
+        (1, "2.1材料费", mat_total, "", "", ""),
+        (2, "   原材料", round(mat_yuan, 2), "", "", ""),
+        (2, "   专用材料费", round(mat_zhuan, 2), "", "", ""),
+        (2, "   燃油", round(mat_ran, 2), "", "", ""),
+        (2, "   技术资料费", round(mat_tech, 2), "", "", ""),
+        (1, "3.1机械使用费", equip_total, "", "", ""),
+        (2, "   设备租赁费", equip_total, "", "", ""),
+        (1, "4.1其他直接费", dc_total, "附明细", "", ""),
     ]
-    for c, (level, name, amt, remark, tax) in enumerate([
-        (0, "一、工程施工", construction_total, "", ""),
-        (1, "1.1人工费", personnel_total, "附明细", ""),
-        (2, "职工薪酬", round(salary_total, 2), "", ""),
-        (2, "职工福利费", round(welfare_total, 2), "", ""),
-        (2, "单位统筹", round(coord_total, 2), "", ""),
-        (2, "工会经费", round(union_total, 2), "", ""),
-        (1, "2.1材料费", mat_total, "", ""),
-        (2, "原材料", round(sum(getattr(m, 'amount', 0) for m in mat_by_cat.get("原材料", [])), 2), "", ""),
-        (2, "专用材料费", round(sum(getattr(m, 'amount', 0) for m in mat_by_cat.get("专用材料费", []) + mat_by_cat.get("专用材料", [])), 2), "", ""),
-        (2, "燃油", round(sum(getattr(m, 'amount', 0) for m in mat_by_cat.get("燃油", []) + mat_by_cat.get("燃油费", [])), 2), "", ""),
-        (2, "技术资料费", round(sum(getattr(m, 'amount', 0) for m in mat_by_cat.get("技术资料费", []) + mat_by_cat.get("技术资料", [])), 2), "", ""),
-        (1, "3.1机械使用费", equip_total, "", ""),
-        (2, "设备租赁费", equip_total, "", ""),
-        (1, "4.1其他直接费", dc_total, "附明细", ""),
-    ] + [(2, name, round(amt, 2), "", "") for name, amt in dc_items] + [
-        (2, "劳务费", labor_total2, "", ""),
-        (2, "分包工程款", sub_total, "附明细", ""),
-    ]):
-        indent = "    " * level
-        for col_idx, val in enumerate(["" if level else indent + name, indent + name if level else "", amt, remark, ""], 1):
-            if level == 0 or col_idx > 1:
-                pass
-        # Simplified: write with indentation
+    for name, amt in dc_all:
+        total_rows.append((2, f"   {name}", round(amt, 2), "", "", ""))
+
+    # 研发 + 其他
+    if rd_total > 0:
+        total_rows.append((1, "研发费用", rd_total, "", "", ""))
+    if other_total2 > 0:
+        total_rows.append((1, "其他费用", other_total2, "", "", ""))
+
+    total_rows += [
+        (0, "", 0, "", "", ""),
+        (0, "二、公司承担研发费用", 0, "", "", ""),
+        (0, "三、销项增值税 = 含税合同额/(1+税率)*税率", xiao_xiang, "", "", ""),
+        (0, "四、可抵扣进项增值税合计", jin_xiang, "", "", ""),
+        (0, "五、应缴税额 = (三 - 四)", ying_jiao, "", "", ""),
+        (0, "六、附加税 = 五 * 12%", fu_jia, "", "", ""),
+        (0, "七、工程成本费用 = (一 - 二 + 六)", gong_cheng_cb, "", "", ""),
+        (0, "八、税后收入 = 含税合同额/(1+税率)", shui_hou_sr, "", "", ""),
+        (0, "九、工程预算毛利润 = (八 - 七)", mao_li_run, "利润率", "", li_run_lv),
+    ]
+
+    for level, name, amt, remark, tax_str, jinxiang in total_rows:
         row += 1
-        ws2.cell(row=row, column=1, value="" if level else "")
-        ws2.cell(row=row, column=2, value=f"{'    ' * level}  {name}").font = normal_font
+        ws2.cell(row=row, column=2, value=name).font = header_font if level <= 1 else normal_font
         ws2.cell(row=row, column=2).alignment = left_align
         ws2.cell(row=row, column=3, value=amt).font = normal_font
         ws2.cell(row=row, column=4, value=remark).font = normal_font
-        for c2 in range(1, 6):
+        ws2.cell(row=row, column=5, value=tax_str).font = normal_font
+        ws2.cell(row=row, column=6, value=jinxiang).font = normal_font
+        for c2 in range(1, 7):
             ws2.cell(row=row, column=c2).border = thin_border
-
-    # 研发+其他
-    if rd_total > 0:
-        row += 1
-        ws2.cell(row=row, column=2, value="研发费用").font = header_font
-        ws2.cell(row=row, column=3, value=rd_total)
-        for c2 in range(1, 6): ws2.cell(row=row, column=c2).border = thin_border
-    if other_total2 > 0:
-        row += 1
-        ws2.cell(row=row, column=2, value="其他费用").font = header_font
-        ws2.cell(row=row, column=3, value=other_total2)
-        for c2 in range(1, 6): ws2.cell(row=row, column=c2).border = thin_border
-
-    # Total row
-    row += 1
-    ws2.cell(row=row, column=2, value="合  计").font = Font(name="宋体", size=11, bold=True)
-    ws2.cell(row=row, column=3, value=round(construction_total + rd_total + other_total2, 2)).font = Font(name="宋体", size=11, bold=True)
-    for c2 in range(1, 6): ws2.cell(row=row, column=c2).border = thin_border
 
     # ====== Sheet 3: 1.1人工费 ======
     ws3 = wb.create_sheet("1.1人工费")
