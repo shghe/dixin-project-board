@@ -211,7 +211,15 @@ import type { EmployeeItem } from '@/api/employees'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const isManager = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
+const isManager = computed(() => {
+  if (!authStore.user) return false
+  // 院长、副院长可以管理所有项目
+  if (['院长', '副院长'].includes(authStore.user.role || '')) return true
+  // 项目经理只能管理自己被任命为项目经理的项目
+  if (!selectedProject.value) return false
+  const project = projects.value.find(p => p.id === selectedProject.value)
+  return project?.manager_id === authStore.user.id
+})
 
 const feeColumns = [
   { field: 'inhouse_personnel', label: '事业人员' },
