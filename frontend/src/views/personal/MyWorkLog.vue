@@ -23,7 +23,7 @@
           <template #header><div class="card-title">项目工时 <span class="card-sum">{{ summary.project_hours }}h</span></div></template>
           <div v-if="summary.project_details.length" class="work-list">
             <div v-for="(p, i) in summary.project_details" :key="i" class="work-item">
-              <div class="work-info"><span class="work-label">项目</span>{{ p.project_name }}<span class="work-content">{{ p.work_content }}</span></div>
+              <div class="work-info"><span class="work-label">项目</span><span class="work-content">{{ p.project_name }}：{{ p.work_content }}</span></div>
               <span class="work-hours">{{ p.work_hours }}h</span>
             </div>
           </div>
@@ -150,6 +150,6 @@ h2 { font-size: 20px; }
 .work-item:last-child { border-bottom: none; }
 .work-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .work-label { font-size: 11px; color: #fff; background: #409eff; border-radius: 3px; padding: 1px 6px; flex-shrink: 0; }
-.work-content { font-size: 13px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-content { font-size: 13px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .work-hours { font-size: 14px; font-weight: 700; color: #409eff; flex-shrink: 0; }
 </style>
