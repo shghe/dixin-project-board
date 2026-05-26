@@ -21,10 +21,10 @@
       <el-col :xs="24" :sm="12">
         <el-card shadow="hover">
           <template #header><div class="card-title">项目工时 <span class="card-sum">{{ summary.project_hours }}h</span></div></template>
-          <div v-if="summary.project_breakdown.length" class="work-list">
-            <div v-for="p in summary.project_breakdown" :key="p.project_name" class="work-item">
-              <div class="work-info"><span class="work-label">项目</span>{{ p.project_name }}</div>
-              <span class="work-hours">{{ p.hours }}h</span>
+          <div v-if="summary.project_details.length" class="work-list">
+            <div v-for="(p, i) in summary.project_details" :key="i" class="work-item">
+              <div class="work-info"><span class="work-label">项目</span>{{ p.project_name }}<span class="work-content">{{ p.work_content }}</span></div>
+              <span class="work-hours">{{ p.work_hours }}h</span>
             </div>
           </div>
           <el-empty v-else description="当日无项目工时" :image-size="40" />
@@ -84,11 +84,11 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { personalWorkApi } from '@/api/personalWork'
-import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
+import type { PersonalWorkEntryItem, DailySummary, ProjectDetail } from '@/api/personalWork'
 
 const selectedDate = ref(new Date().toISOString().slice(0, 10))
 const summary = ref<DailySummary>({
-  record_date: '', project_hours: 0, project_breakdown: [],
+  record_date: '', project_hours: 0, project_breakdown: [], project_details: [],
   personal_hours: 0, total_hours: 0, remaining: 8, entries: [],
 })
 const entries = ref<PersonalWorkEntryItem[]>([])

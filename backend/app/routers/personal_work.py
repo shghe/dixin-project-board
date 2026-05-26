@@ -138,11 +138,12 @@ async def daily_summary(
     if not employee_id:
         raise HTTPException(status_code=400, detail="当前用户未关联员工")
 
-    # 项目工时汇总 + 按项目明细
-    proj_result = await db.execute(
+    # 项目工时明细（每条执行单人员明细，含工作内容）
+    proj_detail_result = await db.execute(
         select(
+            ExecutionDetail.work_hours,
+            ExecutionDetail.work_content,
             Project.name,
-            func.sum(ExecutionDetail.work_hours),
         )
         .join(DailyExecution, ExecutionDetail.execution_id == DailyExecution.id)
         .join(Project, DailyExecution.project_id == Project.id)
@@ -150,12 +151,23 @@ async def daily_summary(
             ExecutionDetail.employee_id == employee_id,
             DailyExecution.record_date == record_date,
         )
-        .group_by(Project.id)
+        .order_by(Project.name)
     )
-    rows = proj_result.all()
+    proj_rows = proj_detail_result.all()
+    project_details = [
+        {
+            "project_name": name,
+            "work_hours": round(float(h or 0), 1),
+            "work_content": wc or "",
+        }
+        for h, wc, name in proj_rows
+    ]
+    # 按项目汇总
+    proj_sum: dict[str, float] = {}
+    for p in project_details:
+        proj_sum[p["project_name"]] = proj_sum.get(p["project_name"], 0) + p["work_hours"]
     project_breakdown = [
-        {"project_name": name, "hours": round(float(h or 0), 1)}
-        for name, h in rows
+        {"project_name": k, "hours": round(v, 1)} for k, v in proj_sum.items()
     ]
     project_hours = round(float(sum(p["hours"] for p in project_breakdown)), 1)
 
@@ -183,6 +195,7 @@ async def daily_summary(
         "record_date": record_date,
         "project_hours": project_hours,
         "project_breakdown": project_breakdown,
+        "project_details": project_details,
         "personal_hours": round(float(personal_hours), 1),
         "total_hours": round(float(project_hours + personal_hours), 1),
         "remaining": round(float(max(0, 8 - project_hours - personal_hours)), 1),

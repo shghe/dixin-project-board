@@ -12,10 +12,17 @@ export interface ProjectBreakdown {
   hours: number
 }
 
+export interface ProjectDetail {
+  project_name: string
+  work_hours: number
+  work_content: string
+}
+
 export interface DailySummary {
   record_date: string
   project_hours: number
   project_breakdown: ProjectBreakdown[]
+  project_details: ProjectDetail[]
   personal_hours: number
   total_hours: number
   remaining: number
