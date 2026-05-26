@@ -26,11 +26,12 @@
           <el-tag :type="row.status==='进行中'?'success':row.status==='已暂停'?'warning':'info'">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click.stop="router.push('/projects/'+row.id)">详情</el-button>
           <el-button size="small" @click.stop="router.push('/projects/'+row.id+'/finance')">财务</el-button>
           <el-button v-if="canEdit" size="small" @click.stop="openDialog(row)">编辑</el-button>
+          <el-button v-if="canDelete" size="small" type="danger" @click.stop="handleDelete(row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -86,7 +87,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { projectsApi } from '@/api/projects'
 import type { ProjectItem } from '@/api/projects'
 import { employeesApi } from '@/api/employees'
@@ -96,6 +97,7 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => ['院长', '副院长', '项目经理'].includes(authStore.user?.role || ''))
+const canDelete = computed(() => authStore.user?.role === '院长')
 
 const list = ref<ProjectItem[]>([])
 const loading = ref(false)
@@ -176,6 +178,13 @@ async function openDialog(row?: ProjectItem) {
     form.value = defaultForm()
   }
   dialogVisible.value = true
+}
+
+async function handleDelete(id: string) {
+  await ElMessageBox.confirm('确定删除该项目？将同时删除所有关联数据（合同、预算、执行单、财务事件等）。', '警告', { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' })
+  await projectsApi.delete(id)
+  ElMessage.success('项目已删除')
+  loadList()
 }
 
 async function handleSave() {

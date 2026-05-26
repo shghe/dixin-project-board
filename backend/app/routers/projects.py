@@ -8,7 +8,12 @@ from sqlalchemy.orm import joinedload
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.identity import normalize_identity
-from app.models import Project, Contract, Subcontract, BudgetItem, ConstructionTask, Employee, User, DailyExecution, FinancialEvent
+from app.models import Project, Contract, Subcontract, BudgetItem, ConstructionTask, Employee, User, DailyExecution, ExecutionDetail, FinancialEvent
+from app.models.budget_v2 import (
+    BudgetSummary, BudgetPersonnel, BudgetMaterial,
+    BudgetEquipment, BudgetDirectCost, BudgetLabor,
+    BudgetSubcontract, BudgetRDOther,
+)
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.contract import ContractCreate, ContractResponse
 from app.schemas.subcontract import SubcontractCreate, SubcontractResponse
@@ -113,6 +118,41 @@ async def update_project(project_id: str, data: ProjectUpdate, db: AsyncSession 
         project_nature=p.project_nature, status=p.status, manager_id=p.manager_id,
         manager_name=p.manager.name if p.manager else None,
         remark=p.remark, created_at=p.created_at, updated_at=p.updated_at)
+
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director")),
+):
+    """院长删除项目（级联删除关联数据）"""
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    p = result.scalar_one_or_none()
+    if not p:
+        raise HTTPException(status_code=404, detail="项目不存在")
+
+    # 先查所有执行单 ID，删除其明细
+    exec_ids = (await db.execute(select(DailyExecution.id).where(DailyExecution.project_id == project_id))).scalars().all()
+    if exec_ids:
+        await db.execute(delete(ExecutionDetail).where(ExecutionDetail.execution_id.in_(exec_ids)))
+
+    await db.execute(delete(FinancialEvent).where(FinancialEvent.project_id == project_id))
+    await db.execute(delete(DailyExecution).where(DailyExecution.project_id == project_id))
+    await db.execute(delete(ConstructionTask).where(ConstructionTask.project_id == project_id))
+    await db.execute(delete(BudgetItem).where(BudgetItem.project_id == project_id))
+    await db.execute(delete(Subcontract).where(Subcontract.project_id == project_id))
+    await db.execute(delete(Contract).where(Contract.project_id == project_id))
+
+    # 预算 v2 表
+    for model in [BudgetPersonnel, BudgetMaterial, BudgetEquipment, BudgetDirectCost,
+                  BudgetLabor, BudgetSubcontract, BudgetRDOther]:
+        await db.execute(delete(model).where(model.project_id == project_id))
+    await db.execute(delete(BudgetSummary).where(BudgetSummary.project_id == project_id))
+
+    await db.delete(p)
+    await db.commit()
+    return {"message": "项目已删除"}
 
 
 # ========== 合同 ==========
