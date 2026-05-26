@@ -33,7 +33,44 @@ export interface PersonnelStats {
   monthly: { month: number; hours: number; cost: number }[]
 }
 
+export interface DailyProjectEntry {
+  project_name: string
+  work_hours: number
+  work_content: string
+}
+
+export interface DailyPersonalEntry {
+  id: string
+  work_hours: number
+  work_content: string
+  category: string
+}
+
+export interface PersonnelDay {
+  date: string
+  project_entries: DailyProjectEntry[]
+  personal_entries: DailyPersonalEntry[]
+  project_hours: number
+  personal_hours: number
+  total_hours: number
+}
+
+export interface PersonnelDailyItem {
+  employee_id: string
+  employee_name: string
+  work_type: string
+  department: string
+  personnel_type: string
+  total_project_hours: number
+  total_personal_hours: number
+  total_hours: number
+  work_days: number
+  days: PersonnelDay[]
+}
+
 export const reportsApi = {
   dashboard: () => get<DashboardStats>('/dashboard/stats'),
   personnel: (params?: any) => get<{ year: number; items: PersonnelStats[] }>('/reports/personnel', params),
+  personnelDaily: (params: { year: number; month: number; employee_id?: string }) =>
+    get<{ year: number; month: number; items: PersonnelDailyItem[] }>('/reports/personnel-daily', params),
 }

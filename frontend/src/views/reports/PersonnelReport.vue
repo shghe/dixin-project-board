@@ -1,90 +1,134 @@
 <template>
   <div class="page">
-    <h2>人员工时统计报表</h2>
+    <h2>人员工时报表</h2>
 
+    <!-- 筛选栏 -->
     <el-row :gutter="12" style="margin-top:12px" align="middle">
-      <el-col :xs="24" :sm="6"><el-input-number v-model="year" :min="2020" :max="2030" @change="loadReport" /></el-col>
-      <el-col :xs="24" :sm="12"><span style="font-size:16px;font-weight:bold">年度人员工时汇总</span></el-col>
-    </el-row>
-
-    <el-row :gutter="16" style="margin-top:16px" v-for="item in reportItems" :key="item.employee_id">
-      <el-col :span="24">
-        <el-card style="margin-bottom:12px">
-          <template #header>
-            <span style="font-weight:bold">{{ item.employee_name }}</span>
-            <el-tag style="margin-left:8px" size="small">{{ item.work_type }}</el-tag>
-            <el-tag style="margin-left:4px" size="small" type="info">{{ item.department }}</el-tag>
-          </template>
-
-          <el-row :gutter="12">
-            <el-col :xs="12" :sm="6">
-              <div class="mini-stat">
-                <div class="mini-value">{{ item.total_hours }}</div>
-                <div class="mini-label">总工时(h)</div>
-              </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-              <div class="mini-stat">
-                <div class="mini-value">{{ item.work_days }}</div>
-                <div class="mini-label">工作日</div>
-              </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-              <div class="mini-stat">
-                <div class="mini-value" style="color:#67c23a">¥{{ item.total_cost.toLocaleString() }}</div>
-                <div class="mini-label">人员成本</div>
-              </div>
-            </el-col>
-            <el-col :xs="12" :sm="6">
-              <div class="mini-stat">
-                <div class="mini-value">{{ item.projects.length }}</div>
-                <div class="mini-label">参与项目</div>
-              </div>
-            </el-col>
-          </el-row>
-
-          <el-divider />
-          <div style="margin-bottom:8px"><b>月度工时：</b></div>
-          <div class="monthly-bar">
-            <div v-for="m in item.monthly" :key="m.month" class="month-bar-item" :title="m.month+'月: '+m.hours+'h'">
-              <div class="month-bar-fill" :style="{height: monthlyBarHeight(m.hours, item.monthly)}" :class="{ zero: m.hours === 0 }"></div>
-              <span class="month-label">{{ m.month }}月</span>
-            </div>
-          </div>
-          <div v-if="item.projects.length" style="margin-top:12px;margin-bottom:8px"><b>项目参与明细：</b></div>
-          <el-table :data="item.projects" size="small" v-if="item.projects.length">
-            <el-table-column prop="name" label="项目名称" />
-            <el-table-column prop="hours" label="工时(h)" width="100" />
-            <el-table-column label="成本" width="120"><template #default="{row}">¥{{ row.cost.toLocaleString() }}</template></el-table-column>
-          </el-table>
-        </el-card>
+      <el-col :xs="12" :sm="3">
+        <el-select v-model="year" placeholder="年份" @change="loadReport">
+          <el-option v-for="y in yearOptions" :key="y" :label="String(y)" :value="y" />
+        </el-select>
+      </el-col>
+      <el-col :xs="12" :sm="3">
+        <el-select v-model="month" placeholder="月份" @change="loadReport">
+          <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
+        </el-select>
+      </el-col>
+      <el-col :xs="12" :sm="4" v-if="isAdmin">
+        <el-select v-model="filterEmployeeId" placeholder="全部人员" clearable filterable @change="loadReport">
+          <el-option v-for="e in employeeList" :key="e.id" :label="e.name" :value="e.id" />
+        </el-select>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <span class="summary-text" v-if="reportItems.length">
+          {{ reportItems.length }}人 · 合计 {{ totalAllHours }}h · 项目 {{ totalProjectHours }}h · 非项目 {{ totalPersonalHours }}h
+        </span>
       </el-col>
     </el-row>
+
+    <!-- 每人每日明细 -->
+    <div v-for="item in reportItems" :key="item.employee_id" style="margin-top:12px">
+      <el-card>
+        <template #header>
+          <div class="emp-header" @click="item._expanded = !item._expanded" style="cursor:pointer">
+            <div class="emp-info">
+              <span class="emp-name">{{ item.employee_name }}</span>
+              <el-tag size="small">{{ item.work_type }}</el-tag>
+              <el-tag size="small" type="info">{{ item.department }}</el-tag>
+              <el-tag size="small" type="warning">{{ item.personnel_type }}</el-tag>
+            </div>
+            <div class="emp-summary">
+              <span class="emp-stat">总工时 <b>{{ item.total_hours }}h</b></span>
+              <span class="emp-stat">项目 <b class="blue">{{ item.total_project_hours }}h</b></span>
+              <span class="emp-stat">非项目 <b class="green">{{ item.total_personal_hours }}h</b></span>
+              <span class="emp-stat">出勤 <b>{{ item.work_days }}天</b></span>
+              <el-icon :class="{ expanded: item._expanded }"><ArrowDown /></el-icon>
+            </div>
+          </div>
+        </template>
+
+        <div v-show="item._expanded">
+          <!-- 每日明细 -->
+          <div v-if="item.days.length" class="day-list">
+            <div v-for="day in item.days" :key="day.date" class="day-card">
+              <div class="day-header">
+                <span class="day-date">{{ day.date }}</span>
+                <span class="day-total">{{ day.total_hours }}h</span>
+                <span class="day-breakdown" v-if="day.project_hours">项目 {{ day.project_hours }}h</span>
+                <span class="day-breakdown green" v-if="day.personal_hours">非项目 {{ day.personal_hours }}h</span>
+              </div>
+
+              <!-- 项目工时明细 -->
+              <div v-if="day.project_entries.length" class="entry-group">
+                <div class="entry-group-label">项目工作</div>
+                <div v-for="(pe, i) in day.project_entries" :key="'p'+i" class="entry-row">
+                  <span class="entry-project">{{ pe.project_name }}</span>
+                  <span class="entry-content">{{ pe.work_content }}</span>
+                  <span class="entry-hours">{{ pe.work_hours }}h</span>
+                </div>
+              </div>
+
+              <!-- 非项目工时明细 -->
+              <div v-if="day.personal_entries.length" class="entry-group">
+                <div class="entry-group-label">非项目工作</div>
+                <div v-for="(pe, i) in day.personal_entries" :key="'e'+i" class="entry-row">
+                  <el-tag size="small" type="info">{{ pe.category }}</el-tag>
+                  <span class="entry-content">{{ pe.work_content }}</span>
+                  <span class="entry-hours">{{ pe.work_hours }}h</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <el-empty v-else description="该月无工作记录" :image-size="40" />
+        </div>
+      </el-card>
+    </div>
 
     <el-empty v-if="!loading && reportItems.length === 0" description="暂无数据" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { reportsApi } from '@/api/reports'
-import type { PersonnelStats } from '@/api/reports'
+import type { PersonnelDailyItem } from '@/api/reports'
+import { employeesApi } from '@/api/employees'
+import type { EmployeeItem } from '@/api/employees'
+import { useAuthStore } from '@/stores/auth'
 
-const year = ref(new Date().getFullYear())
-const reportItems = ref<PersonnelStats[]>([])
+const authStore = useAuthStore()
+const isAdmin = computed(() => ['院长', '综合员'].includes(authStore.user?.role || ''))
+
+const now = new Date()
+const year = ref(now.getFullYear())
+const month = ref(now.getMonth() + 1)
+const filterEmployeeId = ref('')
+const reportItems = ref<(PersonnelDailyItem & { _expanded: boolean })[]>([])
 const loading = ref(false)
+const employeeList = ref<EmployeeItem[]>([])
+
+const yearOptions = computed(() => {
+  const ys = []
+  for (let y = now.getFullYear(); y >= 2020; y--) ys.push(y)
+  return ys
+})
+
+const totalAllHours = computed(() => reportItems.value.reduce((s, i) => s + i.total_hours, 0))
+const totalProjectHours = computed(() => reportItems.value.reduce((s, i) => s + i.total_project_hours, 0))
+const totalPersonalHours = computed(() => reportItems.value.reduce((s, i) => s + i.total_personal_hours, 0))
 
 async function loadReport() {
   loading.value = true
   try {
-    const res = await reportsApi.personnel({ year: year.value })
-    reportItems.value = res.items
+    if (isAdmin.value && !employeeList.value.length) {
+      employeeList.value = await employeesApi.list()
+    }
+    const params: any = { year: year.value, month: month.value }
+    if (filterEmployeeId.value) params.employee_id = filterEmployeeId.value
+    const res = await reportsApi.personnelDaily(params)
+    reportItems.value = (res.items || []).map(i => ({ ...i, _expanded: false }))
   } finally { loading.value = false }
-}
-
-function monthlyBarHeight(hours: number, monthly: PersonnelStats['monthly']) {
-  const max = Math.max(...monthly.map(m => m.hours), 1)
-  return Math.max((hours / max) * 80, hours > 0 ? 4 : 1) + 'px'
 }
 
 onMounted(loadReport)
@@ -92,13 +136,43 @@ onMounted(loadReport)
 
 <style scoped>
 h2 { font-size: 20px; }
-.mini-stat { text-align: center; padding: 8px; }
-.mini-value { font-size: 24px; font-weight: bold; color: #409eff; }
-.mini-label { font-size: 12px; color: #909399; }
+.summary-text { font-size: 14px; color: #606266; }
 
-.monthly-bar { display: flex; gap: 2px; align-items: flex-end; height: 90px; padding: 4px 0; }
-.month-bar-item { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
-.month-bar-fill { width: 100%; max-width: 28px; background: #409eff; border-radius: 2px 2px 0 0; min-height: 1px; transition: height 0.3s; }
-.month-bar-fill.zero { background: #e0e0e0; }
-.month-label { font-size: 10px; color: #909399; margin-top: 2px; }
+/* 员工卡片头部 */
+.emp-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.emp-info { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.emp-name { font-weight: 700; font-size: 15px; }
+.emp-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.emp-stat { font-size: 13px; color: #909399; }
+.emp-stat b { color: #303133; }
+.emp-stat b.blue { color: #409eff; }
+.emp-stat b.green { color: #67c23a; }
+.emp-summary .el-icon { transition: transform 0.2s; }
+.emp-summary .el-icon.expanded { transform: rotate(180deg); }
+
+/* 每日列表 */
+.day-list { max-height: 500px; overflow-y: auto; }
+.day-card { border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+.day-card:last-child { margin-bottom: 0; }
+.day-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.day-date { font-weight: 600; font-size: 14px; color: #303133; min-width: 90px; }
+.day-total { font-weight: 700; font-size: 14px; color: #e6a23c; }
+.day-breakdown { font-size: 12px; color: #409eff; }
+.day-breakdown.green { color: #67c23a; }
+
+/* 条目 */
+.entry-group { margin-bottom: 4px; }
+.entry-group-label { font-size: 11px; color: #909399; margin: 4px 0; padding-left: 2px; }
+.entry-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.entry-project { font-weight: 500; color: #409eff; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; max-width: 160px; }
+.entry-content { color: #606266; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-hours { font-weight: 600; color: #303133; flex-shrink: 0; min-width: 40px; text-align: right; }
+
+/* 响应式 */
+@media (max-width: 767px) {
+  .emp-header { flex-direction: column; align-items: flex-start; }
+  .emp-summary { width: 100%; justify-content: space-between; }
+  .entry-row { flex-wrap: wrap; }
+  .entry-project { max-width: 100%; }
+}
 </style>

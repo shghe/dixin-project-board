@@ -1,4 +1,6 @@
+from collections import defaultdict
 from datetime import date
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -7,7 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.identity import normalize_identity
-from app.models import Project, Contract, DailyExecution, ExecutionDetail, Employee, User
+from app.models import (
+    Project, Contract, DailyExecution, ExecutionDetail,
+    Employee, User, PersonalWorkEntry,
+)
 from app.models.budget_v2 import (
     BudgetPersonnel, BudgetMaterial, BudgetEquipment,
     BudgetDirectCost, BudgetLabor, BudgetSubcontract, BudgetRDOther,
@@ -187,3 +192,136 @@ async def personnel_report(
             "work_days": round(s["total_hours"] / 8, 1),
         })
     return {"year": year, "items": items}
+
+
+@router.get("/reports/personnel-daily")
+async def personnel_daily_report(
+    year: int = Query(...),
+    month: int = Query(..., ge=1, le=12),
+    employee_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """人员每日工时报表 - 按天显示项目工时+个人工时"""
+    role = normalize_identity(current_user.role)
+    if role not in {"院长", "综合员"}:
+        employee_id = current_user.employee_id
+
+    start_date = f"{year}-{month:02d}-01"
+    if month == 12:
+        end_date = f"{year}-12-31"
+    else:
+        end_date = f"{year}-{month+1:02d}-01"
+
+    # 查询所有在职员工
+    emp_query = select(Employee).where(Employee.status == "在职")
+    if employee_id:
+        emp_query = emp_query.where(Employee.id == employee_id)
+    emp_result = await db.execute(emp_query)
+    employees = {e.id: e for e in emp_result.scalars().all()}
+
+    if not employees:
+        return {"year": year, "month": month, "items": []}
+
+    emp_ids = list(employees.keys())
+
+    # 项目工时：ExecutionDetail JOIN DailyExecution JOIN Project
+    proj_result = await db.execute(
+        select(
+            ExecutionDetail.employee_id,
+            DailyExecution.record_date,
+            Project.name,
+            ExecutionDetail.work_hours,
+            ExecutionDetail.work_content,
+        )
+        .join(DailyExecution, ExecutionDetail.execution_id == DailyExecution.id)
+        .outerjoin(Project, DailyExecution.project_id == Project.id)
+        .where(
+            ExecutionDetail.employee_id.in_(emp_ids),
+            DailyExecution.record_date >= start_date,
+            DailyExecution.record_date < end_date,
+        )
+        .order_by(DailyExecution.record_date, Project.name)
+    )
+    proj_rows = proj_result.all()
+
+    # 个人工时：PersonalWorkEntry
+    personal_result = await db.execute(
+        select(PersonalWorkEntry)
+        .where(
+            PersonalWorkEntry.employee_id.in_(emp_ids),
+            PersonalWorkEntry.record_date >= start_date,
+            PersonalWorkEntry.record_date < end_date,
+        )
+        .order_by(PersonalWorkEntry.record_date, PersonalWorkEntry.created_at)
+    )
+    personal_rows = personal_result.scalars().all()
+
+    # 按员工 → 日期 整理数据
+    # data[eid][date_str] = {"project_entries": [...], "personal_entries": [...], "total_hours": 0}
+    data: dict = defaultdict(lambda: defaultdict(lambda: {
+        "project_entries": [],
+        "personal_entries": [],
+        "total_hours": 0.0,
+    }))
+
+    for eid, rec_date, proj_name, hours, content in proj_rows:
+        ds = rec_date.isoformat() if hasattr(rec_date, "isoformat") else str(rec_date)
+        entry = {
+            "project_name": proj_name or "",
+            "work_hours": round(float(hours or 0), 1),
+            "work_content": content or "",
+        }
+        data[eid][ds]["project_entries"].append(entry)
+        data[eid][ds]["total_hours"] += entry["work_hours"]
+
+    for entry in personal_rows:
+        ds = entry.record_date.isoformat() if hasattr(entry.record_date, "isoformat") else str(entry.record_date)
+        pe = {
+            "id": entry.id,
+            "work_hours": round(float(entry.work_hours or 0), 1),
+            "work_content": entry.work_content or "",
+            "category": entry.category or "",
+        }
+        data[entry.employee_id][ds]["personal_entries"].append(pe)
+        data[entry.employee_id][ds]["total_hours"] += pe["work_hours"]
+
+    # 构建返回
+    items = []
+    for eid, emp in employees.items():
+        emp_data = data.get(eid, {})
+        if not emp_data:
+            continue
+        days = []
+        total_project = 0.0
+        total_personal = 0.0
+        for ds in sorted(emp_data.keys()):
+            d = emp_data[ds]
+            d["date"] = ds
+            proj_sum = sum(e["work_hours"] for e in d["project_entries"])
+            personal_sum = sum(e["work_hours"] for e in d["personal_entries"])
+            total_project += proj_sum
+            total_personal += personal_sum
+            days.append({
+                "date": ds,
+                "project_entries": d["project_entries"],
+                "personal_entries": d["personal_entries"],
+                "project_hours": round(proj_sum, 1),
+                "personal_hours": round(personal_sum, 1),
+                "total_hours": round(d["total_hours"], 1),
+            })
+        items.append({
+            "employee_id": eid,
+            "employee_name": emp.name,
+            "work_type": emp.work_type or "",
+            "department": emp.department or "",
+            "personnel_type": emp.personnel_type or "",
+            "total_project_hours": round(total_project, 1),
+            "total_personal_hours": round(total_personal, 1),
+            "total_hours": round(total_project + total_personal, 1),
+            "work_days": len(days),
+            "days": days,
+        })
+
+    items.sort(key=lambda x: x["employee_name"])
+    return {"year": year, "month": month, "items": items}
