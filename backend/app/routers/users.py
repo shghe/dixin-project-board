@@ -17,9 +17,10 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("director")),
 ):
-    result = await db.execute(
-        select(User).options(joinedload(User.employee)).order_by(User.created_at.desc())
-    )
+    query = select(User).options(joinedload(User.employee)).order_by(User.created_at.desc())
+    if current_user.username != "admin":
+        query = query.where(User.username != "admin")
+    result = await db.execute(query)
     users = result.unique().scalars().all()
     return [
         UserResponse(
