@@ -12,6 +12,7 @@ class Contract(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id: Mapped[str] = mapped_column(String(36), ForeignKey("project.id"), unique=True)
+    contract_no: Mapped[str | None] = mapped_column(String(100))  # 合同编号
     contract_amount: Mapped[float] = mapped_column(Float, default=0)  # 合同金额
     discount_rate: Mapped[float] = mapped_column(Float, default=1.0)  # 折扣系数
     actual_amount: Mapped[float] = mapped_column(Float, default=0)  # 实际合同金额 = 合同金额 × 折扣系数

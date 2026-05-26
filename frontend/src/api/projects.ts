@@ -12,7 +12,8 @@ export interface ProjectItem {
 
 export interface ContractItem {
   id: string; project_id: string
-  contract_amount: number; discount_rate: number; actual_amount: number
+  contract_no: string | null; contract_amount: number
+  discount_rate: number; actual_amount: number
   sign_date: string | null; drafter: string | null; reviewer: string | null
   payment_terms: string | null
 }

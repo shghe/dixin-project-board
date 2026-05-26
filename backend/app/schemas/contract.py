@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class ContractCreate(BaseModel):
+    contract_no: str | None = None
     contract_amount: float = 0
     discount_rate: float = 1.0
     sign_date: date | None = None
@@ -12,6 +13,7 @@ class ContractCreate(BaseModel):
 
 
 class ContractUpdate(BaseModel):
+    contract_no: str | None = None
     contract_amount: float | None = None
     discount_rate: float | None = None
     sign_date: date | None = None
@@ -23,6 +25,7 @@ class ContractUpdate(BaseModel):
 class ContractResponse(BaseModel):
     id: str
     project_id: str
+    contract_no: str | None = None
     contract_amount: float
     discount_rate: float
     actual_amount: float

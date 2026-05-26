@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.models import User, Project
+from app.models.contract import Contract
 from app.models.budget_v2 import (
     BudgetSummary, BudgetPersonnel, BudgetMaterial,
     BudgetEquipment, BudgetDirectCost, BudgetLabor,
@@ -148,6 +149,19 @@ def _project_info(project: Project | None) -> dict:
     }
 
 
+def _contract_info(contract: Contract | None) -> dict:
+    """从合同对象提取预算概况中需要展示的合同信息"""
+    if not contract:
+        return {}
+    return {
+        "contract_no": contract.contract_no,
+        "contract_amount": contract.contract_amount,
+        "contract_sign_date": str(contract.sign_date) if contract.sign_date else None,
+        "drafter": contract.drafter,
+        "reviewer": contract.reviewer,
+    }
+
+
 @router.get("/{project_id}/budget/summary")
 async def get_budget_summary(
     project_id: str,
@@ -162,15 +176,19 @@ async def get_budget_summary(
         select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
     )
     project = proj_result.scalar_one_or_none()
+    contract_result = await db.execute(
+        select(Contract).where(Contract.project_id == project_id)
+    )
+    contract = contract_result.scalar_one_or_none()
 
     if summary:
-        # 用项目信息覆盖重复字段
         for k, v in _project_info(project).items():
+            setattr(summary, k, v)
+        for k, v in _contract_info(contract).items():
             setattr(summary, k, v)
         return summary
     if project:
-        # 没有预算记录时，返回一个仅含项目信息的虚拟概况
-        info = _project_info(project)
+        info = {**_project_info(project), **_contract_info(contract)}
         info["project_id"] = project_id
         return info
     return None
@@ -182,13 +200,17 @@ async def save_budget_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("director", "manager")),
 ):
-    # 从项目表拉取最新信息，覆盖前端传来的重复字段
     proj_result = await db.execute(
         select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
     )
     project = proj_result.scalar_one_or_none()
+    contract_result = await db.execute(
+        select(Contract).where(Contract.project_id == project_id)
+    )
+    contract = contract_result.scalar_one_or_none()
     vals = data.model_dump()
     vals.update(_project_info(project))
+    vals.update(_contract_info(contract))
 
     result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
     item = result.scalar_one_or_none()

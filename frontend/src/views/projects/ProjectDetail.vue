@@ -25,6 +25,7 @@
       <!-- 合同信息 -->
       <el-tab-pane label="合同信息" name="contract">
         <el-form :model="contractForm" label-width="120px" v-if="contractForm">
+          <el-form-item label="合同编号"><el-input v-model="contractForm.contract_no" /></el-form-item>
           <el-row :gutter="20">
             <el-col :xs="24" :sm="12">
               <el-form-item label="合同金额"><el-input-number v-model="contractForm.contract_amount" :min="0" style="width:100%" /></el-form-item>
@@ -231,7 +232,7 @@ async function loadAll() {
 // 合同
 function initContract() {
   contractForm.value = {
-    id: '', project_id: projectId, contract_amount: 0, discount_rate: 1.0,
+    id: '', project_id: projectId, contract_no: '', contract_amount: 0, discount_rate: 1.0,
     actual_amount: 0, sign_date: null, drafter: '', reviewer: '', payment_terms: '',
   }
 }
@@ -239,6 +240,7 @@ function initContract() {
 async function saveContract() {
   if (!contractForm.value) return
   await projectsApi.saveContract(projectId, {
+    contract_no: contractForm.value.contract_no,
     contract_amount: contractForm.value.contract_amount,
     discount_rate: contractForm.value.discount_rate,
     sign_date: contractForm.value.sign_date,

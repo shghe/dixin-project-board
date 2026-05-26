@@ -21,7 +21,7 @@
           <el-row :gutter="16">
             <el-col :xs="24" :sm="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
             <el-col :xs="24" :sm="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
             <el-col :xs="24" :sm="12"><el-form-item label="通讯地址"><el-input v-model="summary.address" /></el-form-item></el-col>
@@ -31,10 +31,10 @@
             <el-col :xs="24" :sm="6"><el-form-item label="开工日期"><el-input v-model="summary.start_date" /></el-form-item></el-col>
             <el-col :xs="24" :sm="6"><el-form-item label="竣工日期"><el-input v-model="summary.end_date" /></el-form-item></el-col>
             <el-col :xs="24" :sm="6"><el-form-item label="计划工期"><el-input v-model="summary.planned_duration" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="6"><el-form-item label="签订日期"><el-input v-model="summary.contract_sign_date" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="6"><el-form-item label="签订日期"><el-input v-model="summary.contract_sign_date" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="合同额"><el-input-number v-model="summary.contract_amount" :min="0" style="width:100%" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="合同额"><el-input-number v-model="summary.contract_amount" :min="0" style="width:100%" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
             <el-col :xs="24" :sm="8"><el-form-item label="税率"><el-input-number v-model="summary.tax_rate" :min="0" :max="1" :step="0.01" style="width:100%" /></el-form-item></el-col>
             <el-col :xs="24" :sm="8"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
           </el-row>
@@ -47,9 +47,9 @@
           <el-form-item label="工作内容"><el-input v-model="summary.work_content" type="textarea" :rows="3" /></el-form-item>
           <el-form-item label="其他"><el-input v-model="summary.other_info" type="textarea" :rows="2" /></el-form-item>
           <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="填表"><el-input v-model="summary.drafter" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="填表"><el-input v-model="summary.drafter" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
             <el-col :xs="24" :sm="8"><el-form-item label="校核"><el-input v-model="summary.checker" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="审核"><el-input v-model="summary.reviewer" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="审核"><el-input v-model="summary.reviewer" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
           </el-row>
           <el-button type="primary" @click="saveSummary" :loading="saving" v-if="canEdit">保存概况</el-button>
         </el-form>
@@ -415,6 +415,19 @@ async function loadSummary() {
     summary.value.contact_person = project.value.contact_person ?? ''
     summary.value.contact_phone = project.value.contact_phone ?? ''
     summary.value.project_manager = project.value.manager_name ?? ''
+  }
+  // 始终用合同信息覆盖重复字段
+  try {
+    const contract = await projectsApi.getContract(projectId)
+    if (contract) {
+      summary.value.contract_no = contract.contract_no ?? ''
+      summary.value.contract_amount = contract.contract_amount ?? 0
+      summary.value.contract_sign_date = contract.sign_date ?? ''
+      summary.value.drafter = contract.drafter ?? ''
+      summary.value.reviewer = contract.reviewer ?? ''
+    }
+  } catch {
+    // 没有合同数据时忽略
   }
 }
 
