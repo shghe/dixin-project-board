@@ -347,7 +347,7 @@ async def personnel_daily_work(
 async def create_execution(
     data: DailyExecutionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("manager")),
+    current_user: User = Depends(require_role("director", "manager")),
 ):
     """项目经理填写每日执行单"""
     await _check_project_manager(data.project_id, current_user, db)
@@ -416,7 +416,7 @@ async def create_execution(
 async def update_execution(
     exec_id: str, data: DailyExecutionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("manager")),
+    current_user: User = Depends(require_role("director", "manager")),
 ):
     """项目经理编辑执行单"""
     result = await db.execute(
