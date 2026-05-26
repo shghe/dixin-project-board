@@ -30,6 +30,7 @@ export interface PersonnelStats {
   total_cost: number
   work_days: number
   projects: { name: string; hours: number; cost: number }[]
+  monthly: { month: number; hours: number; cost: number }[]
 }
 
 export const reportsApi = {

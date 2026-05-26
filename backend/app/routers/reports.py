@@ -136,7 +136,8 @@ async def personnel_report(
     employee_id: str | None = Query(None), year: int = Query(2025),
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
-    if normalize_identity(current_user.role) in {"技术员", "司机"}:
+    role = normalize_identity(current_user.role)
+    if role not in {"院长", "综合员"}:
         employee_id = current_user.employee_id
 
     start_date = f"{year}-01-01"; end_date = f"{year}-12-31"
@@ -160,10 +161,14 @@ async def personnel_report(
                 "employee_id": eid, "employee_name": employee.name,
                 "work_type": employee.work_type, "department": employee.department,
                 "total_hours": 0, "total_cost": 0, "projects": {},
+                "monthly": {m: {"hours": 0, "cost": 0} for m in range(1, 13)},
             }
         s = stats[eid]
         s["total_hours"] += detail.work_hours
         s["total_cost"] += detail.cost
+        month = execution.record_date.month
+        s["monthly"][month]["hours"] += detail.work_hours
+        s["monthly"][month]["cost"] += detail.cost
         if project:
             pname = project.name
             if pname not in s["projects"]:
@@ -175,8 +180,10 @@ async def personnel_report(
     for eid, s in stats.items():
         project_list = [{"name": k, "hours": v["hours"], "cost": round(v["cost"], 2)}
                         for k, v in sorted(s["projects"].items(), key=lambda x: x[1]["hours"], reverse=True)]
+        monthly_list = [{"month": m, "hours": round(s["monthly"][m]["hours"], 1),
+                         "cost": round(s["monthly"][m]["cost"], 2)} for m in range(1, 13)]
         items.append({
-            **s, "projects": project_list,
+            **s, "projects": project_list, "monthly": monthly_list,
             "work_days": round(s["total_hours"] / 8, 1),
         })
     return {"year": year, "items": items}
