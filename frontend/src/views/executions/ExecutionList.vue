@@ -211,7 +211,7 @@ import type { EmployeeItem } from '@/api/employees'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const isManager = computed(() => authStore.user?.role === '项目经理')
+const isManager = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
 
 const feeColumns = [
   { field: 'inhouse_personnel', label: '事业人员' },
