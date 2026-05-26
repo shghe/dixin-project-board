@@ -59,6 +59,8 @@
             <el-option label="行政事务" value="行政事务" />
             <el-option label="临时任务" value="临时任务" />
             <el-option label="培训学习" value="培训学习" />
+            <el-option label="请假" value="请假" />
+            <el-option label="出差" value="出差" />
             <el-option label="其他" value="其他" />
           </el-select>
         </el-form-item>
