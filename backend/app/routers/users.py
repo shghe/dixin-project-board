@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role, hash_password
+from app.identity import normalize_identity
 from app.models import User, Employee
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 
@@ -24,7 +25,7 @@ async def list_users(
         UserResponse(
             id=u.id,
             username=u.username,
-            role=u.role,
+            role=normalize_identity(u.role),
             employee_id=u.employee_id,
             employee_name=u.employee.name if u.employee else None,
             is_active=u.is_active,
@@ -43,10 +44,17 @@ async def create_user(
     existing = await db.execute(select(User).where(User.username == data.username))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="用户名已存在")
+    role = normalize_identity(data.role)
+    if data.employee_id:
+        emp_result = await db.execute(select(Employee).where(Employee.id == data.employee_id))
+        employee = emp_result.scalar_one_or_none()
+        if not employee:
+            raise HTTPException(status_code=400, detail="关联员工不存在")
+        role = normalize_identity(employee.work_type)
     user = User(
         username=data.username,
         password_hash=hash_password(data.password),
-        role=data.role,
+        role=role,
         employee_id=data.employee_id,
     )
     db.add(user)
@@ -59,7 +67,7 @@ async def create_user(
     return UserResponse(
         id=u.id,
         username=u.username,
-        role=u.role,
+        role=normalize_identity(u.role),
         employee_id=u.employee_id,
         employee_name=u.employee.name if u.employee else None,
         is_active=u.is_active,
@@ -80,8 +88,16 @@ async def update_user(
         raise HTTPException(status_code=404, detail="用户不存在")
     if data.password is not None:
         user.password_hash = hash_password(data.password)
-    if data.role is not None:
-        user.role = data.role
+    if data.employee_id is not None:
+        user.employee_id = data.employee_id or None
+    if user.employee_id:
+        emp_result = await db.execute(select(Employee).where(Employee.id == user.employee_id))
+        employee = emp_result.scalar_one_or_none()
+        if not employee:
+            raise HTTPException(status_code=400, detail="关联员工不存在")
+        user.role = normalize_identity(employee.work_type)
+    elif data.role is not None:
+        user.role = normalize_identity(data.role)
     if data.is_active is not None:
         user.is_active = data.is_active
     await db.commit()
@@ -93,7 +109,7 @@ async def update_user(
     return UserResponse(
         id=u.id,
         username=u.username,
-        role=u.role,
+        role=normalize_identity(u.role),
         employee_id=u.employee_id,
         employee_name=u.employee.name if u.employee else None,
         is_active=u.is_active,

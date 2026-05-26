@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.dependencies import create_access_token, get_current_user, hash_password, verify_password
+from app.identity import normalize_identity
 from app.models import User
 from app.schemas.auth import CaptchaResponse, ChangePasswordRequest, LoginRequest, TokenResponse, UserInfo
 
@@ -105,7 +106,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         access_token=token,
         id=user.id,
         username=user.username,
-        role=user.role,
+        role=normalize_identity(user.role),
         employee_id=user.employee_id,
         employee_name=user.employee.name if user.employee else None,
     )
@@ -116,7 +117,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return UserInfo(
         id=current_user.id,
         username=current_user.username,
-        role=current_user.role,
+        role=normalize_identity(current_user.role),
         employee_id=current_user.employee_id,
         employee_name=current_user.employee.name if current_user.employee else None,
     )

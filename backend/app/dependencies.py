@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from app.config import settings
 from app.database import get_db
+from app.identity import role_matches
 from app.models import User
 
 security = HTTPBearer()
@@ -57,7 +58,7 @@ def require_role(*roles: str):
     """角色权限检查依赖"""
 
     async def role_checker(current_user: User = Depends(get_current_user)):
-        if current_user.role not in roles:
+        if not role_matches(current_user.role, roles):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足")
         return current_user
 

@@ -391,7 +391,7 @@ const saving = ref(false)
 const exporting = ref(false)
 const loadingRollup = ref(false)
 
-const canEdit = computed(() => ['director', 'manager'].includes(authStore.user?.role || ''))
+const canEdit = computed(() => ['院长', '副院长', '项目经理'].includes(authStore.user?.role || ''))
 
 // ===== 项目概况 =====
 const summary = ref<Record<string, any>>({

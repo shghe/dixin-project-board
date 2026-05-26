@@ -25,8 +25,8 @@ const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const currentRoute = computed(() => route.path)
-const isDirector = computed(() => authStore.user?.role === 'director')
-const canViewExec = computed(() => ['director','manager'].includes(authStore.user?.role||''))
+const isDirector = computed(() => authStore.user?.role === '院长')
+const canViewExec = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
 </script>
 
 <style scoped>

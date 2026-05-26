@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     password: str | None = None
     role: str | None = None
+    employee_id: str | None = None
     is_active: bool | None = None
 
 

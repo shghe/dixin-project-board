@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
+from app.identity import load_personnel_wages, normalize_identity, personnel_daily_wage
 from app.models import Employee, User
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, EmployeeResponse
 
@@ -42,7 +43,13 @@ async def create_employee(
 ):
     result = await db.execute(select(Employee))
     code = generate_employee_code(list(result.scalars().all()))
-    emp = Employee(employee_code=code, **data.model_dump())
+    values = data.model_dump()
+    values["work_type"] = normalize_identity(values.get("work_type"))
+    wages = await load_personnel_wages(db)
+    values["daily_wage"] = personnel_daily_wage(values.get("personnel_type"), wages)
+    if not values.get("position"):
+        values["position"] = values["work_type"]
+    emp = Employee(employee_code=code, **values)
     db.add(emp)
     await db.commit()
     await db.refresh(emp)
@@ -68,7 +75,17 @@ async def update_employee(
     emp = result.scalar_one_or_none()
     if not emp:
         raise HTTPException(status_code=404, detail="员工不存在")
-    for k, v in data.model_dump(exclude_unset=True).items():
+    values = data.model_dump(exclude_unset=True)
+    values.pop("daily_wage", None)
+    if "work_type" in values:
+        values["work_type"] = normalize_identity(values.get("work_type"))
+        if not values.get("position"):
+            values["position"] = values["work_type"]
+    if "personnel_type" in values or "work_type" in values:
+        personnel_type = values.get("personnel_type", emp.personnel_type)
+        wages = await load_personnel_wages(db)
+        values["daily_wage"] = personnel_daily_wage(personnel_type, wages)
+    for k, v in values.items():
         setattr(emp, k, v)
     await db.commit()
     await db.refresh(emp)

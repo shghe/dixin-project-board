@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
+from app.identity import normalize_identity
 from app.models import DailyExecution, ExecutionDetail, Employee, Project, User, BudgetItem
 from app.models.budget_v2 import (
     BudgetSummary, BudgetPersonnel, BudgetMaterial,

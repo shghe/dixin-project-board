@@ -21,13 +21,7 @@ const appStore = useAppStore()
 const router = useRouter()
 
 const roleLabel = computed(() => {
-  const map: Record<string, string> = {
-    director: '院长/主任',
-    manager: '项目经理',
-    finance: '财务',
-    employee: '员工',
-  }
-  return map[authStore.user?.role || ''] || ''
+  return authStore.user?.role || ''
 })
 
 function handleLogout() {

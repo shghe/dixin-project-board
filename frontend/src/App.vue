@@ -56,8 +56,8 @@ const mobileActive = ref('')
 const showMoreMenu = ref(false)
 const windowWidth = ref(window.innerWidth)
 const isMobile = computed(() => windowWidth.value < 768)
-const canViewExec = computed(() => ['director','manager'].includes(authStore.user?.role||''))
-const isDirector = computed(() => authStore.user?.role === 'director')
+const canViewExec = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
+const isDirector = computed(() => authStore.user?.role === '院长')
 const mobileMenuActions = computed(() => {
   const actions = [
     { name: '我的工时', path: '/my-work' },

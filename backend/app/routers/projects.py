@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
+from app.identity import normalize_identity
 from app.models import Project, Contract, Subcontract, BudgetItem, ConstructionTask, Employee, User, DailyExecution, FinancialEvent
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.contract import ContractCreate, ContractResponse
@@ -37,7 +38,7 @@ async def list_projects(
 ):
     query = select(Project).options(joinedload(Project.manager))
     count_query = select(func.count(Project.id))
-    if current_user.role == "manager" and current_user.employee_id:
+    if normalize_identity(current_user.role) == "项目经理" and current_user.employee_id:
         query = query.where(Project.manager_id == current_user.employee_id)
         count_query = count_query.where(Project.manager_id == current_user.employee_id)
     if status:

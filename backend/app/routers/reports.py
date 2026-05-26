@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.identity import normalize_identity
 from app.models import Project, Contract, DailyExecution, ExecutionDetail, Employee, User
 from app.models.budget_v2 import (
     BudgetPersonnel, BudgetMaterial, BudgetEquipment,
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/api", tags=["报表"])
 @router.get("/dashboard/stats")
 async def dashboard_stats(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """工作台首页数据"""
-    is_manager = current_user.role == "manager" and current_user.employee_id
+    is_manager = normalize_identity(current_user.role) == "项目经理" and current_user.employee_id
 
     # --- 基础统计 ---
     proj_query = select(func.count(Project.id))
@@ -135,7 +136,7 @@ async def personnel_report(
     employee_id: str | None = Query(None), year: int = Query(2025),
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
-    if current_user.role == "employee":
+    if normalize_identity(current_user.role) in {"技术员", "司机"}:
         employee_id = current_user.employee_id
 
     start_date = f"{year}-01-01"; end_date = f"{year}-12-31"

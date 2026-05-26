@@ -9,7 +9,7 @@
       </el-table-column>
       <el-table-column label="角色" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.role === 'director' ? 'danger' : row.role === 'manager' ? 'warning' : row.role === 'finance' ? 'success' : 'info'" size="small">
+          <el-tag :type="roleTagType(row.role)" size="small">
             {{ roleLabel(row.role) }}
           </el-tag>
         </template>
@@ -31,8 +31,8 @@
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑账号' : '新增账号'" width="480px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="关联员工">
-          <el-select v-model="form.employee_id" placeholder="选择员工（可选）" clearable filterable style="width:100%">
-            <el-option v-for="e in employees" :key="e.id" :label="e.name" :value="e.id" />
+          <el-select v-model="form.employee_id" placeholder="选择员工（可选）" clearable filterable style="width:100%" @change="syncRoleFromEmployee">
+            <el-option v-for="e in employees" :key="e.id" :label="`${e.name} - ${e.work_type}`" :value="e.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="用户名"><el-input v-model="form.username" placeholder="登录用户名" /></el-form-item>
@@ -40,11 +40,8 @@
           <el-input v-model="form.password" :placeholder="editingId ? '留空则不修改' : '设置登录密码'" show-password />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.role" style="width:100%">
-            <el-option label="院长" value="director" />
-            <el-option label="项目经理" value="manager" />
-            <el-option label="财务" value="finance" />
-            <el-option label="员工" value="employee" />
+          <el-select v-model="form.role" style="width:100%" :disabled="!!form.employee_id">
+            <el-option v-for="item in identityOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" v-if="editingId">
@@ -74,13 +71,33 @@ const form = ref({
   employee_id: '',
   username: '',
   password: '',
-  role: 'employee',
+  role: '技术员',
   is_active: true,
 })
 
+const identityOptions = [
+  { label: '院长', value: '院长' },
+  { label: '副院长', value: '副院长' },
+  { label: '综合员', value: '综合员' },
+  { label: '司机', value: '司机' },
+  { label: '项目经理', value: '项目经理' },
+  { label: '技术员', value: '技术员' },
+]
+
 function roleLabel(role: string) {
-  const map: Record<string, string> = { director: '院长', manager: '项目经理', finance: '财务', employee: '员工' }
-  return map[role] || role
+  return role
+}
+
+function roleTagType(role: string) {
+  if (role === '院长' || role === '副院长') return 'danger'
+  if (role === '项目经理') return 'warning'
+  if (role === '综合员') return 'success'
+  return 'info'
+}
+
+function syncRoleFromEmployee() {
+  const employee = employees.value.find(item => item.id === form.value.employee_id)
+  if (employee) form.value.role = employee.work_type
 }
 
 async function loadList() {
@@ -104,7 +121,7 @@ function openDialog(row?: UserItem) {
     }
   } else {
     editingId.value = ''
-    form.value = { employee_id: '', username: '', password: '', role: 'employee', is_active: true }
+    form.value = { employee_id: '', username: '', password: '', role: '技术员', is_active: true }
   }
   dialogVisible.value = true
 }
@@ -113,7 +130,7 @@ async function handleSave() {
   if (!form.value.username) { ElMessage.warning('请输入用户名'); return }
   if (!editingId.value && !form.value.password) { ElMessage.warning('请设置密码'); return }
   if (editingId.value) {
-    const data: any = { role: form.value.role, is_active: form.value.is_active }
+    const data: any = { role: form.value.role, employee_id: form.value.employee_id || null, is_active: form.value.is_active }
     if (form.value.password) data.password = form.value.password
     await usersApi.update(editingId.value, data)
     ElMessage.success('更新成功')

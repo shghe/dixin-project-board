@@ -2,6 +2,7 @@ from app.models.work_type import WorkType
 from app.models.attendance_type import AttendanceType
 from app.models.employee import Employee
 from app.models.user import User
+from app.models.system_config import SystemConfig
 from app.models.project import Project
 from app.models.contract import Contract
 from app.models.subcontract import Subcontract
@@ -23,6 +24,7 @@ __all__ = [
     "AttendanceType",
     "Employee",
     "User",
+    "SystemConfig",
     "Project",
     "Contract",
     "Subcontract",

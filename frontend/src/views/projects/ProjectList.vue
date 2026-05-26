@@ -95,7 +95,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const canEdit = computed(() => ['director', 'manager'].includes(authStore.user?.role || ''))
+const canEdit = computed(() => ['院长', '副院长', '项目经理'].includes(authStore.user?.role || ''))
 
 const list = ref<ProjectItem[]>([])
 const loading = ref(false)
