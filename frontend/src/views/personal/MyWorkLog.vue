@@ -14,16 +14,26 @@
 
     <!-- 工时卡片 -->
     <el-row :gutter="16" style="margin-top:12px">
-      <el-col :xs="8" :sm="4">
-        <el-card shadow="hover"><div class="sc">项目工时</div><div class="sv">{{ summary.project_hours }}h</div></el-card>
+      <el-col :xs="24" :sm="6">
+        <el-card shadow="hover">
+          <div class="sc">项目工时</div>
+          <div class="sv">{{ summary.project_hours }}h</div>
+          <div v-if="summary.project_breakdown.length" class="breakdown">
+            <div v-for="p in summary.project_breakdown" :key="p.project_name" class="breakdown-item">
+              <span class="breakdown-name">{{ p.project_name }}</span>
+              <span class="breakdown-hours">{{ p.hours }}h</span>
+            </div>
+          </div>
+          <div v-else class="sc" style="margin-top:4px">-</div>
+        </el-card>
       </el-col>
-      <el-col :xs="8" :sm="4">
+      <el-col :xs="24" :sm="6">
         <el-card shadow="hover"><div class="sc">个人工时</div><div class="sv" style="color:#67c23a">{{ summary.personal_hours }}h</div></el-card>
       </el-col>
-      <el-col :xs="8" :sm="4">
+      <el-col :xs="24" :sm="6">
         <el-card shadow="hover"><div class="sc">合计</div><div class="sv" :style="{color: summary.total_hours>=8?'#67c23a':'#e6a23c'}">{{ summary.total_hours }}h</div></el-card>
       </el-col>
-      <el-col :xs="8" :sm="4">
+      <el-col :xs="24" :sm="6">
         <el-card shadow="hover"><div class="sc">剩余</div><div class="sv" :style="{color: summary.remaining>0?'#f56c6c':'#67c23a'}">{{ summary.remaining }}h</div></el-card>
       </el-col>
     </el-row>
@@ -80,8 +90,8 @@ import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
 
 const selectedDate = ref(new Date().toISOString().slice(0, 10))
 const summary = ref<DailySummary>({
-  record_date: '', project_hours: 0, personal_hours: 0,
-  total_hours: 0, remaining: 8, entries: [],
+  record_date: '', project_hours: 0, project_breakdown: [],
+  personal_hours: 0, total_hours: 0, remaining: 8, entries: [],
 })
 const entries = ref<PersonalWorkEntryItem[]>([])
 const dialogVisible = ref(false)
@@ -134,6 +144,10 @@ onMounted(loadData)
 h2 { font-size: 20px; }
 .sc { font-size: 13px; color: #909399; }
 .sv { font-size: 22px; font-weight: bold; color: #409eff; }
+.breakdown { margin-top: 8px; border-top: 1px solid #ebeef5; padding-top: 6px; }
+.breakdown-item { display: flex; justify-content: space-between; font-size: 12px; color: #606266; line-height: 1.8; }
+.breakdown-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+.breakdown-hours { font-weight: 600; color: #409eff; flex-shrink: 0; }
 .card-header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 
 @media (max-width: 767px) {

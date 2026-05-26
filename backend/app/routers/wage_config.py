@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.identity import PERSONNEL_TYPE_WAGES, load_personnel_wages
-from app.models import SystemConfig, User
+from app.models import Employee, SystemConfig, User
 
 router = APIRouter(prefix="/api/settings", tags=["系统设置"])
 
@@ -35,5 +35,11 @@ async def update_wages(
             config.value = str(wage)
         else:
             db.add(SystemConfig(key=key, value=str(wage)))
+        # 批量更新已有员工的日工资
+        emp_result = await db.execute(
+            select(Employee).where(Employee.personnel_type == personnel_type)
+        )
+        for emp in emp_result.scalars().all():
+            emp.daily_wage = wage
     await db.commit()
-    return {"message": "工资标准已更新"}
+    return {"message": "工资标准已更新，员工日工资已同步"}

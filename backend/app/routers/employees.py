@@ -81,10 +81,10 @@ async def update_employee(
         values["work_type"] = normalize_identity(values.get("work_type"))
         if not values.get("position"):
             values["position"] = values["work_type"]
-    if "personnel_type" in values or "work_type" in values:
-        personnel_type = values.get("personnel_type", emp.personnel_type)
+    new_pt = values.get("personnel_type")
+    if new_pt and new_pt != (emp.personnel_type or "").strip():
         wages = await load_personnel_wages(db)
-        values["daily_wage"] = personnel_daily_wage(personnel_type, wages)
+        values["daily_wage"] = personnel_daily_wage(new_pt, wages)
     for k, v in values.items():
         setattr(emp, k, v)
     await db.commit()

@@ -351,6 +351,17 @@ async def create_execution(
 ):
     """项目经理填写每日执行单"""
     await _check_project_manager(data.project_id, current_user, db)
+
+    # 每天每个项目只能有一条执行单
+    existing = await db.execute(
+        select(DailyExecution).where(
+            DailyExecution.project_id == data.project_id,
+            DailyExecution.record_date == data.record_date,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="该项目当天已有执行单，请使用编辑功能修改")
+
     # 预加载员工信息
     emp_ids = [d.employee_id for d in data.details]
     emp_map = {}
@@ -493,6 +504,29 @@ async def update_execution(
     return _execution_to_response(result.unique().scalar_one())
 
 
+@router.get("/by-date")
+async def get_execution_by_date(
+    project_id: str = Query(...),
+    record_date: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director", "manager")),
+):
+    """按项目+日期查找执行单"""
+    result = await db.execute(
+        select(DailyExecution).options(
+            joinedload(DailyExecution.project),
+            joinedload(DailyExecution.details).joinedload(ExecutionDetail.employee),
+        ).where(
+            DailyExecution.project_id == project_id,
+            DailyExecution.record_date == record_date,
+        )
+    )
+    records = result.unique().scalars().all()
+    if not records:
+        return {"found": False, "item": None}
+    return {"found": True, "item": _execution_to_response(records[0])}
+
+
 @router.get("/{exec_id}", response_model=DailyExecutionResponse)
 async def get_execution(
     exec_id: str,
@@ -510,6 +544,23 @@ async def get_execution(
     if current_user.role not in ("院长", "副院长"):
         await _check_project_manager(r.project_id, current_user, db)
     return _execution_to_response(r)
+
+
+@router.delete("/{exec_id}")
+async def delete_execution(
+    exec_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director", "manager")),
+):
+    result = await db.execute(select(DailyExecution).where(DailyExecution.id == exec_id))
+    exec = result.scalar_one_or_none()
+    if not exec:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    await _check_project_manager(exec.project_id, current_user, db)
+    await db.execute(delete(ExecutionDetail).where(ExecutionDetail.execution_id == exec_id))
+    await db.delete(exec)
+    await db.commit()
+    return {"message": "已删除"}
 
 
 def _execution_to_response(r: DailyExecution) -> DailyExecutionResponse:

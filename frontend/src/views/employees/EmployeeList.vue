@@ -116,7 +116,8 @@ function openWageDialog() {
 async function handleSaveWages() {
   await settingsApi.updateWages({ ...wageForm })
   Object.assign(personnelWageMap, wageForm)
-  ElMessage.success('工资标准已更新')
+  await loadList()
+  ElMessage.success('工资标准已更新，员工日工资已同步')
   wageDialogVisible.value = false
 }
 
@@ -128,7 +129,6 @@ function openDialog(row?: EmployeeItem) {
   dialogVisible.value=true
 }
 async function handleSave() {
-  syncDailyWage()
   if(editingId.value){await employeesApi.update(editingId.value,form.value);ElMessage.success('更新成功')}
   else{await employeesApi.create(form.value);ElMessage.success('新增成功')}
   dialogVisible.value=false; loadList()

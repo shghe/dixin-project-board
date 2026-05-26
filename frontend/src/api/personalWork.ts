@@ -7,9 +7,15 @@ export interface PersonalWorkEntryItem {
   created_at: string
 }
 
+export interface ProjectBreakdown {
+  project_name: string
+  hours: number
+}
+
 export interface DailySummary {
   record_date: string
   project_hours: number
+  project_breakdown: ProjectBreakdown[]
   personal_hours: number
   total_hours: number
   remaining: number

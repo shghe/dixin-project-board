@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import PersonalWorkEntry, Employee, User, DailyExecution, ExecutionDetail
+from app.models import PersonalWorkEntry, Employee, User, DailyExecution, ExecutionDetail, Project
 from app.schemas.personal_work_entry import (
     PersonalWorkEntryCreate,
     PersonalWorkEntryUpdate,
@@ -138,16 +138,26 @@ async def daily_summary(
     if not employee_id:
         raise HTTPException(status_code=400, detail="当前用户未关联员工")
 
-    # 项目工时
+    # 项目工时汇总 + 按项目明细
     proj_result = await db.execute(
-        select(func.sum(ExecutionDetail.work_hours))
+        select(
+            Project.name,
+            func.sum(ExecutionDetail.work_hours),
+        )
         .join(DailyExecution, ExecutionDetail.execution_id == DailyExecution.id)
+        .join(Project, DailyExecution.project_id == Project.id)
         .where(
             ExecutionDetail.employee_id == employee_id,
             DailyExecution.record_date == record_date,
         )
+        .group_by(Project.id)
     )
-    project_hours = proj_result.scalar() or 0
+    rows = proj_result.all()
+    project_breakdown = [
+        {"project_name": name, "hours": round(float(h or 0), 1)}
+        for name, h in rows
+    ]
+    project_hours = round(float(sum(p["hours"] for p in project_breakdown)), 1)
 
     # 个人工时（非项目）
     personal_result = await db.execute(
@@ -171,7 +181,8 @@ async def daily_summary(
 
     return {
         "record_date": record_date,
-        "project_hours": round(float(project_hours), 1),
+        "project_hours": project_hours,
+        "project_breakdown": project_breakdown,
         "personal_hours": round(float(personal_hours), 1),
         "total_hours": round(float(project_hours + personal_hours), 1),
         "remaining": round(float(max(0, 8 - project_hours - personal_hours)), 1),

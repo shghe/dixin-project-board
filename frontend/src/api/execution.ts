@@ -1,4 +1,4 @@
-import { get, post, put } from './request'
+import { get, post, put, del } from './request'
 
 export interface ExecutionDetailItem {
   employee_id: string; employee_name?: string | null
@@ -46,6 +46,8 @@ export const executionApi = {
   list: (params?: any) => get<ExecutionListResponse>('/executions', params),
   personnelDaily: (params?: any) => get<PersonnelDailyResponse>('/executions/personnel-daily', params),
   get: (id: string) => get<ExecutionItem>(`/executions/${id}`),
+  getByDate: (project_id: string, record_date: string) => get<{ found: boolean; item: ExecutionItem | null }>('/executions/by-date', { project_id, record_date }),
   create: (data: any) => post<ExecutionItem>('/executions', data),
   update: (id: string, data: any) => put<ExecutionItem>(`/executions/${id}`, data),
+  delete: (id: string) => del<{ message: string }>(`/executions/${id}`),
 }

@@ -7,7 +7,7 @@
           <el-radio-button value="project">项目维度</el-radio-button>
           <el-radio-button value="personnel">人员维度</el-radio-button>
         </el-radio-group>
-        <el-button type="primary" @click="openDialog" v-if="isManager && viewMode === 'project'">新增执行单</el-button>
+        <el-button type="primary" @click="openDialog" v-if="isManager && viewMode === 'project'">今日执行单</el-button>
       </div>
     </div>
 
@@ -87,9 +87,12 @@
                 <template v-else-if="!row._sentinel"><b>¥{{ row.daily_cost.toLocaleString() }}</b></template>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="55" v-if="isManager">
+            <el-table-column label="操作" width="140" v-if="isManager" fixed="right">
               <template #default="{row}">
-                <el-button v-if="!row._sentinel" size="small" text type="primary" @click="openEditDialog(row)">编辑</el-button>
+                <template v-if="!row._sentinel">
+                  <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
+                  <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
+                </template>
               </template>
             </el-table-column>
           </el-table>
@@ -200,7 +203,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { executionApi } from '@/api/execution'
 import type { ExecutionItem, PersonnelDailyItem } from '@/api/execution'
@@ -377,17 +380,31 @@ function onViewModeChange() {
 }
 
 async function openDialog() {
-  editingId.value = ''
   await loadData()
+  const today = new Date().toISOString().slice(0, 10)
+  const pid = selectedProject.value || ''
+
+  // 检查当天是否已有执行单
+  if (pid) {
+    try {
+      const { found, item } = await executionApi.getByDate(pid, today)
+      if (found && item) {
+        openEditDialog(item)
+        return
+      }
+    } catch { /* 查询失败则按新增处理 */ }
+  }
+
+  editingId.value = ''
   form.value = {
-    project_id: selectedProject.value || '', record_date: new Date().toISOString().slice(0, 10), seq_number: 1,
+    project_id: pid, record_date: today, seq_number: 1,
     subcontract_fee: 0, relevant_fee: 0, material_fee: 0, labor_fee: 0,
     rental_fee: 0, transport_fee: 0, office_fee: 0, entertainment_fee: 0,
     other_fee: 0, travel_fee: 0, bidding_fee: 0, commission_fee: 0, tax_fee: 0,
     remark: '', registrant: authStore.user?.employee_name || '',
     details: [{ employee_id: '', work_hours: 8, work_content: '', is_leave: false, leave_reason: '' }],
   }
-  const proj = projects.value.find(p => p.id === selectedProject.value)
+  const proj = projects.value.find(p => p.id === pid)
   if (proj) form.value.registrant = proj.manager_name || ''
   dialogVisible.value = true
 }
@@ -426,6 +443,13 @@ async function handleSave() {
     dialogVisible.value = false
     loadList()
   } finally { saving.value = false }
+}
+
+async function handleDelete(id: string) {
+  await ElMessageBox.confirm('确定删除该执行单？', '提示', { type: 'warning' })
+  await executionApi.delete(id)
+  ElMessage.success('已删除')
+  loadList()
 }
 
 onMounted(() => { loadData() })
