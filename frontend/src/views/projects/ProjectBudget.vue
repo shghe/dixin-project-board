@@ -15,12 +15,12 @@
       <el-tab-pane label="项目概况" name="summary">
         <el-form :model="summary" label-width="120px" size="small" :disabled="!canEdit">
           <el-row :gutter="16">
-            <el-col :xs="24" :sm="12"><el-form-item label="工程名称"><el-input v-model="summary.project_name" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="12"><el-form-item label="甲方全称"><el-input v-model="summary.party_a" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="工程名称"><el-input v-model="summary.project_name" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="甲方全称"><el-input v-model="summary.party_a" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
+            <el-col :xs="24" :sm="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
             <el-col :xs="24" :sm="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
@@ -39,7 +39,7 @@
             <el-col :xs="24" :sm="8"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :xs="24" :sm="12"><el-form-item label="项目经理"><el-input v-model="summary.project_manager" /></el-form-item></el-col>
+            <el-col :xs="24" :sm="12"><el-form-item label="项目经理"><el-input v-model="summary.project_manager" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
             <el-col :xs="24" :sm="12"><el-form-item label="技术负责"><el-input v-model="summary.tech_lead" /></el-form-item></el-col>
           </el-row>
           <el-form-item label="编制依据"><el-input v-model="summary.compilation_basis" type="textarea" :rows="2" /></el-form-item>
@@ -407,8 +407,14 @@ async function loadSummary() {
   const s = await projectsApi.getBudgetSummary(projectId)
   if (s) {
     summary.value = { ...summary.value, ...s }
-  } else if (project.value) {
+  }
+  // 始终用项目信息覆盖重复字段
+  if (project.value) {
     summary.value.project_name = project.value.name
+    summary.value.party_a = project.value.party_a ?? ''
+    summary.value.contact_person = project.value.contact_person ?? ''
+    summary.value.contact_phone = project.value.contact_phone ?? ''
+    summary.value.project_manager = project.value.manager_name ?? ''
   }
 }
 
@@ -689,4 +695,5 @@ onMounted(async () => {
 .stat-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 6px; padding: 14px 16px; }
 .stat-label { font-size: 12px; color: #909399; margin-bottom: 6px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #303133; }
+.auto-hint { font-size: 11px; color: #909399; margin-left: 4px; white-space: nowrap; }
 </style>

@@ -8,12 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
-from app.models import User
+from app.models import User, Project
 from app.models.budget_v2 import (
     BudgetSummary, BudgetPersonnel, BudgetMaterial,
     BudgetEquipment, BudgetDirectCost, BudgetLabor,
     BudgetSubcontract, BudgetRDOther,
 )
+from sqlalchemy.orm import selectinload
 from app.schemas.budget_v2 import (
     BudgetSummaryCreate, BudgetSummaryResponse,
     BudgetPersonnelCreate, BudgetPersonnelResponse,
@@ -133,14 +134,46 @@ _rd_other_crud = make_crud("rd_other", BudgetRDOther, BudgetRDOtherCreate, Budge
 # 预算概况
 # ============================================================
 
-@router.get("/{project_id}/budget/summary", response_model=BudgetSummaryResponse | None)
+def _project_info(project: Project | None) -> dict:
+    """从项目对象提取预算概况中需要展示的项目信息"""
+    if not project:
+        return {}
+    manager_name = project.manager.name if project.manager else None
+    return {
+        "project_name": project.name,
+        "party_a": project.party_a,
+        "contact_person": project.contact_person,
+        "contact_phone": project.contact_phone,
+        "project_manager": manager_name,
+    }
+
+
+@router.get("/{project_id}/budget/summary")
 async def get_budget_summary(
     project_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
-    return result.scalar_one_or_none()
+    result = await db.execute(
+        select(BudgetSummary).where(BudgetSummary.project_id == project_id)
+    )
+    summary = result.scalar_one_or_none()
+    proj_result = await db.execute(
+        select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
+    )
+    project = proj_result.scalar_one_or_none()
+
+    if summary:
+        # 用项目信息覆盖重复字段
+        for k, v in _project_info(project).items():
+            setattr(summary, k, v)
+        return summary
+    if project:
+        # 没有预算记录时，返回一个仅含项目信息的虚拟概况
+        info = _project_info(project)
+        info["project_id"] = project_id
+        return info
+    return None
 
 
 @router.put("/{project_id}/budget/summary", response_model=BudgetSummaryResponse)
@@ -149,12 +182,20 @@ async def save_budget_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("director", "manager")),
 ):
+    # 从项目表拉取最新信息，覆盖前端传来的重复字段
+    proj_result = await db.execute(
+        select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
+    )
+    project = proj_result.scalar_one_or_none()
+    vals = data.model_dump()
+    vals.update(_project_info(project))
+
     result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
     item = result.scalar_one_or_none()
     if item:
-        for k, v in data.model_dump().items(): setattr(item, k, v)
+        for k, v in vals.items(): setattr(item, k, v)
     else:
-        item = BudgetSummary(project_id=project_id, **data.model_dump())
+        item = BudgetSummary(project_id=project_id, **vals)
         db.add(item)
     await db.commit(); await db.refresh(item)
     return item
