@@ -24,7 +24,7 @@
         </el-form-item>
       </el-form>
       <p v-if="showHint" class="hint">测试账号：{{ defaultUsername }} / {{ defaultPassword }}</p>
-      <p class="version">v1.2.0</p>
+      <p class="version">v1.3.0</p>
     </div>
   </div>
 </template>
