@@ -24,7 +24,7 @@
         </el-form-item>
       </el-form>
       <p v-if="showHint" class="hint">测试账号：{{ defaultUsername }} / {{ defaultPassword }}</p>
-      <p class="version">v1.3.0</p>
+      <p class="version">v{{ version }}</p>
     </div>
   </div>
 </template>
@@ -37,6 +37,7 @@ import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const version = APP_VERSION
 const router = useRouter()
 const loading = ref(false)
 const captchaLoading = ref(false)
