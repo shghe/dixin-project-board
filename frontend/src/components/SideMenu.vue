@@ -24,7 +24,6 @@ import { Odometer, User, Folder, Tickets, DataAnalysis, Clock, Setting, Lock } f
 const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-const appStore = useAppStore()
 const currentRoute = computed(() => route.path)
 const isDirector = computed(() => authStore.user?.role === '院长')
 const canViewExec = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
