@@ -98,7 +98,7 @@ import type { EmployeeItem } from '@/api/employees'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const isAdmin = computed(() => ['院长', '综合员'].includes(authStore.user?.role || ''))
+const isAdmin = computed(() => ['院长', '副院长', '综合员'].includes(authStore.user?.role || ''))
 
 const now = new Date()
 const year = ref(now.getFullYear())

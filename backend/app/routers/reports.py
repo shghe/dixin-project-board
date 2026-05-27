@@ -142,7 +142,7 @@ async def personnel_report(
     db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
     role = normalize_identity(current_user.role)
-    if role not in {"院长", "综合员"}:
+    if role not in {"院长", "副院长", "综合员"}:
         employee_id = current_user.employee_id
 
     start_date = f"{year}-01-01"; end_date = f"{year}-12-31"
@@ -204,7 +204,7 @@ async def personnel_daily_report(
 ):
     """人员每日工时报表 - 按天显示项目工时+个人工时"""
     role = normalize_identity(current_user.role)
-    if role not in {"院长", "综合员"}:
+    if role not in {"院长", "副院长", "综合员"}:
         employee_id = current_user.employee_id
 
     start_date = f"{year}-{month:02d}-01"
