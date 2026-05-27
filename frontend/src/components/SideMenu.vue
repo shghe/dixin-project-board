@@ -1,6 +1,6 @@
 <template>
   <div class="side-menu">
-    <div class="logo"><span>项目管理系统</span></div>
+    <div class="logo"><div class="logo-title">华北地质勘查局第四地质大队</div><div class="logo-sub">地理信息院</div></div>
     <el-menu :default-active="currentRoute" router background-color="#001529" text-color="#ffffffa6" active-text-color="#fff" :collapse="appStore.sidebarCollapsed">
       <el-menu-item index="/dashboard"><el-icon><Odometer /></el-icon><span>首页</span></el-menu-item>
       <el-menu-item index="/users" v-if="isDirector"><el-icon><Setting /></el-icon><span>账号管理</span></el-menu-item>
@@ -31,6 +31,8 @@ const canViewExec = computed(() => ['院长','副院长','项目经理'].include
 
 <style scoped>
 .side-menu { height: 100vh; display: flex; flex-direction: column; }
-.logo { height: 60px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.logo { height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); gap: 2px; }
+.logo-title { font-size: 13px; font-weight: 600; letter-spacing: 1px; }
+.logo-sub { font-size: 11px; font-weight: 400; opacity: 0.8; }
 .el-menu { border-right: none; flex: 1; overflow-y: auto; }
 </style>
