@@ -1,6 +1,6 @@
 <template>
   <div class="side-menu">
-    <div class="logo"><span>地理信息院</span></div>
+    <div class="logo"><span v-show="!appStore.sidebarCollapsed">地理信息院</span></div>
     <el-menu :default-active="currentRoute" router background-color="#001529" text-color="#ffffffa6" active-text-color="#fff" :collapse="appStore.sidebarCollapsed">
       <el-menu-item index="/dashboard"><el-icon><Odometer /></el-icon><span>首页</span></el-menu-item>
       <el-menu-item index="/users" v-if="isDirector"><el-icon><Setting /></el-icon><span>账号管理</span></el-menu-item>
@@ -24,6 +24,7 @@ import { Odometer, User, Folder, Tickets, DataAnalysis, Clock, Setting, Lock } f
 const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 const currentRoute = computed(() => route.path)
 const isDirector = computed(() => authStore.user?.role === '院长')
 const canViewExec = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))

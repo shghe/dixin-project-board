@@ -3,7 +3,7 @@
     <!-- PC 端布局 -->
     <template v-if="!isMobile">
       <el-container class="layout-pc">
-        <el-aside v-if="authStore.isLoggedIn" width="220px" class="sidebar">
+        <el-aside v-if="authStore.isLoggedIn" :width="appStore.sidebarCollapsed ? '64px' : '220px'" class="sidebar" style="transition: width 0.3s">
           <SideMenu />
         </el-aside>
         <el-container>
@@ -47,10 +47,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useAppStore } from './stores/app'
 import SideMenu from './components/SideMenu.vue'
 import HeaderBar from './components/HeaderBar.vue'
 
 const authStore = useAuthStore()
+const appStore = useAppStore()
 const router = useRouter()
 const mobileActive = ref('')
 const showMoreMenu = ref(false)
