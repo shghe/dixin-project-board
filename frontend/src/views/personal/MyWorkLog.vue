@@ -5,7 +5,7 @@
     <!-- 日期选择 -->
     <el-row :gutter="16" style="margin-top:12px" align="middle">
       <el-col :xs="12" :sm="4">
-        <el-date-picker v-model="selectedDate" type="date" placeholder="选择日期" @change="loadData" style="width:100%" />
+        <el-date-picker v-model="selectedDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" @change="loadData" style="width:100%" />
       </el-col>
       <el-col :xs="12" :sm="8">
         <span class="summary-text">
@@ -96,10 +96,16 @@ const dialogVisible = ref(false)
 const editingId = ref('')
 const form = ref({ category: '院务工作', work_hours: 0, work_content: '' })
 
+function fmtDate(d: string | Date): string {
+  if (d instanceof Date) return d.toISOString().slice(0, 10)
+  return d
+}
+
 async function loadData() {
+  const ds = fmtDate(selectedDate.value)
   const [s, e] = await Promise.all([
-    personalWorkApi.dailySummary(selectedDate.value),
-    personalWorkApi.list({ record_date: selectedDate.value }),
+    personalWorkApi.dailySummary(ds),
+    personalWorkApi.list({ record_date: ds }),
   ])
   summary.value = s
   entries.value = e
@@ -121,7 +127,7 @@ async function handleSave() {
     await personalWorkApi.update(editingId.value, form.value)
     ElMessage.success('更新成功')
   } else {
-    await personalWorkApi.create({ ...form.value, record_date: selectedDate.value })
+    await personalWorkApi.create({ ...form.value, record_date: fmtDate(selectedDate.value) })
     ElMessage.success('添加成功')
   }
   dialogVisible.value = false

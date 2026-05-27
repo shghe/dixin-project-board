@@ -136,4 +136,8 @@ async function handleSave() {
 async function handleDelete(id:string){await ElMessageBox.confirm('确定删除？','提示',{type:'warning'});await employeesApi.delete(id);ElMessage.success('删除成功');loadList()}
 onMounted(async () => { await loadWages(); loadList() })
 </script>
-<style scoped>.page h2{font-size:20px}.page-header{display:flex;justify-content:space-between;align-items:center}</style>
+<style scoped>
+.page h2{font-size:20px;margin:0}
+.page-header{display:flex;justify-content:space-between;align-items:center}
+.page-header>div{display:flex;align-items:center;gap:8px}
+</style>
