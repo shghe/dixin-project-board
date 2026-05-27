@@ -2,6 +2,7 @@
   <div class="login-page">
     <div class="login-card">
       <h1>项目管理系统</h1>
+      <p class="subtitle">华北地质勘查局第四地质大队</p>
       <el-form ref="formRef" :model="form" :rules="rules" size="large">
         <el-form-item prop="username">
           <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" autocomplete="username" />
