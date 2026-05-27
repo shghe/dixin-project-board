@@ -127,7 +127,7 @@ async function loadReport() {
     const params: any = { year: year.value, month: month.value }
     if (filterEmployeeId.value) params.employee_id = filterEmployeeId.value
     const res = await reportsApi.personnelDaily(params)
-    reportItems.value = (res.items || []).map(i => ({ ...i, _expanded: false }))
+    reportItems.value = (res.items || []).map(i => ({ ...i, _expanded: true }))
   } finally { loading.value = false }
 }
 
