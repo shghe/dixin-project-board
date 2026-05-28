@@ -174,7 +174,7 @@
           <el-col :xs="24" :sm="12"><el-form-item label="开始日期"><el-date-picker v-model="taskForm.start_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
           <el-col :xs="24" :sm="12"><el-form-item label="结束日期"><el-date-picker v-model="taskForm.end_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
         </el-row>
-        <el-form-item label="工期(天)"><el-input-number v-model="taskForm.duration_days" :min="0" style="width:100%" /></el-form-item>
+        <el-form-item label="工期(天)"><el-input-number v-model="taskForm.duration_days" :min="0" style="width:100%" disabled /></el-form-item>
         <el-form-item label="备注"><el-input v-model="taskForm.remark" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="taskDialogVisible=false">取消</el-button><el-button type="primary" @click="saveTask">保存</el-button></template>
@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { projectsApi } from '@/api/projects'
@@ -223,6 +223,14 @@ const editingTaskId = ref('')
 const taskForm = ref({
   task_name: '', start_date: null as string|null, duration_days: 0,
   end_date: null as string|null, sort_order: 0, remark: '',
+})
+
+// 开始/结束日期变化时自动计算工期
+watch(() => [taskForm.value.start_date, taskForm.value.end_date], ([s, e]) => {
+  if (s && e) {
+    const diff = Math.ceil((new Date(e).getTime() - new Date(s).getTime()) / 86400000)
+    taskForm.value.duration_days = Math.max(0, diff)
+  }
 })
 
 // 甘特图全局日期范围
