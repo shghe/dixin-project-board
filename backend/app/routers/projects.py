@@ -71,6 +71,10 @@ async def list_projects(
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role("director", "manager"))):
     project_data = data.model_dump()
+    role = normalize_identity(current_user.role)
+    # 非院长/副院长强制将项目经理设为自己
+    if role not in ("院长", "副院长"):
+        project_data["manager_id"] = current_user.employee_id
     code = project_data.pop("project_code", None)
     if not code:
         result = await db.execute(select(Project))

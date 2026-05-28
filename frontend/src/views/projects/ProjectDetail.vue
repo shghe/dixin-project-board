@@ -73,17 +73,51 @@
         <div style="margin-bottom:12px">
           <el-button type="primary" size="small" @click="$router.push(`/projects/${projectId}/budget`)" v-if="canEdit">编制预算</el-button>
         </div>
-        <el-table :data="budgetItems" stripe>
-          <el-table-column prop="category" label="一级科目" width="120" />
-          <el-table-column prop="sub_category" label="二级科目" width="120" />
-          <el-table-column label="金额" width="130"><template #default="{row}">¥{{ row.amount.toLocaleString() }}</template></el-table-column>
-          <el-table-column prop="quantity" label="数量" width="70" />
-          <el-table-column prop="work_days" label="工日" width="70" />
-          <el-table-column prop="unit_price" label="单价" width="90" />
-          <el-table-column label="人员相关" width="90"><template #default="{row}"><el-tag :type="row.is_personnel?'success':'info'" size="small">{{ row.is_personnel ? '是' : '否' }}</el-tag></template></el-table-column>
-          <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
-        </el-table>
-        <el-empty v-if="budgetItems.length===0" description="暂无预算科目" />
+        <!-- 项目概况表 -->
+        <div class="overview-table">
+          <h3>工程概况</h3>
+          <table class="info-table">
+            <tr><td class="label">工程名称</td><td :colspan="3">{{ budgetSummary.project_name || project?.name || '-' }}</td></tr>
+            <tr><td class="label">甲方全称</td><td :colspan="3">{{ budgetSummary.party_a || project?.party_a || '-' }}</td></tr>
+            <tr>
+              <td class="label">联系人</td><td>{{ budgetSummary.contact_person || project?.contact_person || '-' }}</td>
+              <td class="label">电话</td><td>{{ budgetSummary.contact_phone || project?.contact_phone || '-' }}</td>
+            </tr>
+            <tr><td class="label">甲方通讯地址</td><td :colspan="3">{{ budgetSummary.address || '-' }}</td></tr>
+            <tr><td class="label">工程所在地</td><td :colspan="3">{{ budgetSummary.location || '-' }}</td></tr>
+            <tr>
+              <td class="label">开工日期</td><td>{{ budgetSummary.start_date || '-' }}</td>
+              <td class="label">竣工日期</td><td>{{ budgetSummary.end_date || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">计划工期</td><td>{{ budgetSummary.planned_duration || '-' }}</td>
+              <td class="label">合同签订时间</td><td>{{ budgetSummary.contract_sign_date || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">合同额</td><td>¥{{ (budgetSummary.contract_amount || 0).toLocaleString() }}</td>
+              <td class="label">税率</td><td>{{ ((budgetSummary.tax_rate || 0) * 100).toFixed(0) }}%</td>
+            </tr>
+            <tr>
+              <td class="label">合同编号</td><td>{{ budgetSummary.contract_no || '-' }}</td>
+              <td class="label">实施单位</td><td>{{ budgetSummary.implementing_unit || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">项目经理</td><td>{{ budgetSummary.project_manager || project?.manager_name || '-' }}</td>
+              <td class="label">技术负责</td><td>{{ budgetSummary.tech_lead || '-' }}</td>
+            </tr>
+          </table>
+          <h3>编制依据</h3><div class="info-text">{{ budgetSummary.compilation_basis || '-' }}</div>
+          <h3>施工条件</h3><div class="info-text">{{ budgetSummary.construction_conditions || '-' }}</div>
+          <h3>工作内容</h3><div class="info-text">{{ budgetSummary.work_content || '-' }}</div>
+          <h3>其他</h3><div class="info-text">{{ budgetSummary.other_info || '-' }}</div>
+          <table class="info-table" style="margin-top:12px">
+            <tr>
+              <td class="label">填表</td><td>{{ budgetSummary.drafter || '-' }}</td>
+              <td class="label">校核</td><td>{{ budgetSummary.checker || '-' }}</td>
+              <td class="label">审核</td><td>{{ budgetSummary.reviewer || '-' }}</td>
+            </tr>
+          </table>
+        </div>
       </el-tab-pane>
 
       <!-- 施工横道图 -->
@@ -179,6 +213,7 @@ const subForm = ref({
 })
 
 // 预算
+const budgetSummary = ref<Record<string, any>>({})
 const budgetItems = ref<BudgetItemRow[]>([])
 
 // 施工任务
@@ -215,16 +250,18 @@ function ganttBarStyle(task: TaskItem) {
 async function loadAll() {
   loading.value = true
   try {
-    const [proj, subs, items, t] = await Promise.all([
+    const [proj, subs, items, t, bSummary] = await Promise.all([
       projectsApi.get(projectId),
       projectsApi.listSubcontracts(projectId).catch(() => [] as SubcontractItem[]),
       projectsApi.listBudgetItems(projectId).catch(() => [] as BudgetItemRow[]),
       projectsApi.listTasks(projectId).catch(() => [] as TaskItem[]),
+      projectsApi.getBudgetSummary(projectId).catch(() => null),
     ])
     project.value = proj
     subcontracts.value = subs
     budgetItems.value = items
     tasks.value = t
+    budgetSummary.value = bSummary || {}
     try { contractForm.value = await projectsApi.getContract(projectId) } catch { contractForm.value = null }
   } finally { loading.value = false }
 }
@@ -328,4 +365,17 @@ onMounted(loadAll)
     width: 96px;
   }
 }
+
+.overview-table h3 {
+  font-size: 14px;
+  color: #303133;
+  margin: 16px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e4e7ed;
+}
+.overview-table h3:first-child { margin-top: 0; }
+.info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.info-table td { padding: 6px 10px; border: 1px solid #dcdfe6; vertical-align: middle; }
+.info-table td.label { background: #f5f7fa; color: #606266; font-weight: 600; width: 100px; white-space: nowrap; }
+.info-text { padding: 8px 12px; min-height: 36px; background: #fafafa; border: 1px solid #ebeef5; border-radius: 4px; font-size: 13px; color: #303133; white-space: pre-wrap; margin-bottom: 4px; }
 </style>

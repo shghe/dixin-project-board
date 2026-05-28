@@ -13,46 +13,88 @@
     <el-tabs v-model="activeTab" type="border-card" @tab-change="onTabChange">
       <!-- ==================== 项目概况 ==================== -->
       <el-tab-pane label="项目概况" name="summary">
-        <el-form :model="summary" label-width="120px" size="small" :disabled="!canEdit">
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="12"><el-form-item label="工程名称"><el-input v-model="summary.project_name" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="12"><el-form-item label="甲方全称"><el-input v-model="summary.party_a" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="联系人"><el-input v-model="summary.contact_person" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="电话"><el-input v-model="summary.contact_phone" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="合同编号"><el-input v-model="summary.contract_no" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="12"><el-form-item label="通讯地址"><el-input v-model="summary.address" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="12"><el-form-item label="工程所在地"><el-input v-model="summary.location" /></el-form-item></el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="6"><el-form-item label="开工日期"><el-input v-model="summary.start_date" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="6"><el-form-item label="竣工日期"><el-input v-model="summary.end_date" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="6"><el-form-item label="计划工期"><el-input v-model="summary.planned_duration" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="6"><el-form-item label="签订日期"><el-input v-model="summary.contract_sign_date" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="合同额"><el-input-number v-model="summary.contract_amount" :min="0" style="width:100%" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="税率"><el-input-number v-model="summary.tax_rate" :min="0" :max="1" :step="0.01" style="width:100%" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="12"><el-form-item label="项目经理"><el-input v-model="summary.project_manager" disabled /><span class="auto-hint">来自项目信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="12"><el-form-item label="技术负责"><el-input v-model="summary.tech_lead" /></el-form-item></el-col>
-          </el-row>
-          <el-form-item label="编制依据"><el-input v-model="summary.compilation_basis" type="textarea" :rows="2" /></el-form-item>
-          <el-form-item label="施工条件"><el-input v-model="summary.construction_conditions" type="textarea" :rows="3" /></el-form-item>
-          <el-form-item label="工作内容"><el-input v-model="summary.work_content" type="textarea" :rows="3" /></el-form-item>
-          <el-form-item label="其他"><el-input v-model="summary.other_info" type="textarea" :rows="2" /></el-form-item>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="8"><el-form-item label="填表"><el-input v-model="summary.drafter" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="校核"><el-input v-model="summary.checker" /></el-form-item></el-col>
-            <el-col :xs="24" :sm="8"><el-form-item label="审核"><el-input v-model="summary.reviewer" disabled /><span class="auto-hint">来自合同信息</span></el-form-item></el-col>
-          </el-row>
-          <el-button type="primary" @click="saveSummary" :loading="saving" v-if="canEdit">保存概况</el-button>
-        </el-form>
+        <div class="overview-table">
+          <h3>工程概况</h3>
+          <table class="info-table">
+            <tr><td class="label">工程名称</td><td :colspan="3">{{ summary.project_name || '-' }}</td></tr>
+            <tr><td class="label">甲方全称</td><td :colspan="3">{{ summary.party_a || '-' }}</td></tr>
+            <tr>
+              <td class="label">联系人</td><td>{{ summary.contact_person || '-' }}</td>
+              <td class="label">电话</td><td>{{ summary.contact_phone || '-' }}</td>
+            </tr>
+            <tr><td class="label">甲方通讯地址</td><td :colspan="3">{{ summary.address || '-' }}</td></tr>
+            <tr><td class="label">工程所在地</td><td :colspan="3">{{ summary.location || '-' }}</td></tr>
+            <tr>
+              <td class="label">开工日期</td><td>{{ summary.start_date || '-' }}</td>
+              <td class="label">竣工日期</td><td>{{ summary.end_date || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">计划工期</td><td>{{ summary.planned_duration || '-' }}</td>
+              <td class="label">合同签订时间</td><td>{{ summary.contract_sign_date || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">合同额</td><td>¥{{ (summary.contract_amount || 0).toLocaleString() }}</td>
+              <td class="label">税率</td><td>{{ ((summary.tax_rate || 0) * 100).toFixed(0) }}%</td>
+            </tr>
+            <tr>
+              <td class="label">合同编号</td><td>{{ summary.contract_no || '-' }}</td>
+              <td class="label">实施单位</td><td>{{ summary.implementing_unit || '-' }}</td>
+            </tr>
+            <tr>
+              <td class="label">项目经理</td><td>{{ summary.project_manager || '-' }}</td>
+              <td class="label">技术负责</td><td>{{ summary.tech_lead || '-' }}</td>
+            </tr>
+          </table>
+
+          <h3>编制依据</h3>
+          <div class="info-text">{{ summary.compilation_basis || '-' }}</div>
+
+          <h3>施工条件</h3>
+          <div class="info-text">{{ summary.construction_conditions || '-' }}</div>
+
+          <h3>工作内容</h3>
+          <div class="info-text">{{ summary.work_content || '-' }}</div>
+
+          <h3>其他</h3>
+          <div class="info-text">{{ summary.other_info || '-' }}</div>
+
+          <table class="info-table" style="margin-top:16px">
+            <tr>
+              <td class="label">填表</td><td>{{ summary.drafter || '-' }}</td>
+              <td class="label">校核</td><td>{{ summary.checker || '-' }}</td>
+              <td class="label">审核</td><td>{{ summary.reviewer || '-' }}</td>
+            </tr>
+          </table>
+          <el-button type="primary" @click="openSummaryDialog" style="margin-top:12px" v-if="canEdit">编辑概况</el-button>
+        </div>
+
+        <!-- 编辑概况对话框 -->
+        <el-dialog v-model="dlg.summary" title="编辑项目概况" width="700px">
+          <el-form :model="summary" label-width="120px" size="small">
+            <el-row :gutter="16">
+              <el-col :xs="24" :sm="12"><el-form-item label="通讯地址"><el-input v-model="summary.address" /></el-form-item></el-col>
+              <el-col :xs="24" :sm="12"><el-form-item label="工程所在地"><el-input v-model="summary.location" /></el-form-item></el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :sm="8"><el-form-item label="开工日期"><el-input v-model="summary.start_date" /></el-form-item></el-col>
+              <el-col :xs="24" :sm="8"><el-form-item label="竣工日期"><el-input v-model="summary.end_date" /></el-form-item></el-col>
+              <el-col :xs="24" :sm="8"><el-form-item label="计划工期"><el-input v-model="summary.planned_duration" /></el-form-item></el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :sm="12"><el-form-item label="税率"><el-input-number v-model="summary.tax_rate" :min="0" :max="1" :step="0.01" style="width:100%" /></el-form-item></el-col>
+              <el-col :xs="24" :sm="12"><el-form-item label="实施单位"><el-input v-model="summary.implementing_unit" /></el-form-item></el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :xs="24" :sm="12"><el-form-item label="技术负责"><el-input v-model="summary.tech_lead" /></el-form-item></el-col>
+              <el-col :xs="24" :sm="12"><el-form-item label="校核"><el-input v-model="summary.checker" /></el-form-item></el-col>
+            </el-row>
+            <el-form-item label="编制依据"><el-input v-model="summary.compilation_basis" type="textarea" :rows="2" /></el-form-item>
+            <el-form-item label="施工条件"><el-input v-model="summary.construction_conditions" type="textarea" :rows="3" /></el-form-item>
+            <el-form-item label="工作内容"><el-input v-model="summary.work_content" type="textarea" :rows="3" /></el-form-item>
+            <el-form-item label="其他"><el-input v-model="summary.other_info" type="textarea" :rows="2" /></el-form-item>
+          </el-form>
+          <template #footer><el-button @click="dlg.summary=false" size="small">取消</el-button><el-button type="primary" @click="saveSummary" :loading="saving" size="small">保存</el-button></template>
+        </el-dialog>
       </el-tab-pane>
 
       <!-- ==================== 总表 ==================== -->
@@ -89,14 +131,21 @@
           <el-table-column prop="category" label="类别" width="100" />
           <el-table-column prop="position" label="岗位" width="100" />
           <el-table-column prop="employee_name" label="姓名" width="100" />
-          <el-table-column prop="base_salary" label="基本工资" width="100" align="right" />
-          <el-table-column prop="performance" label="绩效" width="80" align="right" />
-          <el-table-column prop="field_allowance" label="野外津贴" width="90" align="right" />
-          <el-table-column prop="heat_prevention" label="防暑降温" width="90" align="right" />
-          <el-table-column prop="union_fee" label="工会经费" width="90" align="right" />
-          <el-table-column prop="unit_coordination" label="单位统筹" width="90" align="right" />
           <el-table-column prop="work_months" label="工作月" width="70" align="right" />
-          <el-table-column label="合计" width="100" align="right">
+          <el-table-column prop="field_months" label="野外月" width="70" align="right" />
+          <el-table-column prop="salary_subtotal" label="薪酬小计" width="110" align="right">
+            <template #default="{row}">¥{{ row.salary_subtotal?.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column prop="welfare_subtotal" label="福利费小计" width="110" align="right">
+            <template #default="{row}">¥{{ row.welfare_subtotal?.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column prop="coordination_subtotal" label="单位统筹小计" width="120" align="right">
+            <template #default="{row}">¥{{ row.coordination_subtotal?.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column prop="union_subtotal" label="工会经费小计" width="110" align="right">
+            <template #default="{row}">¥{{ row.union_subtotal?.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column label="合计" width="110" align="right">
             <template #default="{row}"><b>¥{{ row.total?.toLocaleString() }}</b></template>
           </el-table-column>
           <el-table-column label="操作" width="130" v-if="canEdit">
@@ -108,6 +157,19 @@
             </template>
           </el-table-column>
         </el-table>
+        <div v-if="personnelList.length" class="table-summary">
+          <span class="sum-cell w100">合计</span>
+          <span class="sum-cell w100" />
+          <span class="sum-cell w100" />
+          <span class="sum-cell w70 right">{{ pSum.work_months.toLocaleString() }}</span>
+          <span class="sum-cell w70 right">{{ pSum.field_months.toLocaleString() }}</span>
+          <span class="sum-cell w110 right">¥{{ pSum.salary_subtotal.toLocaleString() }}</span>
+          <span class="sum-cell w110 right">¥{{ pSum.welfare_subtotal.toLocaleString() }}</span>
+          <span class="sum-cell w120 right">¥{{ pSum.coordination_subtotal.toLocaleString() }}</span>
+          <span class="sum-cell w110 right">¥{{ pSum.union_subtotal.toLocaleString() }}</span>
+          <span class="sum-cell w110 right"><b>¥{{ pSum.total.toLocaleString() }}</b></span>
+          <span class="sum-cell w130" v-if="canEdit" />
+        </div>
         <el-empty v-if="!personnelList.length" description="暂无人员" />
       </el-tab-pane>
 
@@ -436,10 +498,13 @@ async function loadSummary() {
   }
 }
 
+function openSummaryDialog() { dlg.value.summary = true }
+
 async function saveSummary() {
   saving.value = true
   try {
     await projectsApi.saveBudgetSummary(projectId, summary.value)
+    dlg.value.summary = false
     ElMessage.success('概况已保存')
   } finally { saving.value = false }
 }
@@ -471,7 +536,7 @@ async function loadRollup() {
 const personnelList = ref<any[]>([])
 const fPersonnel = ref<any>({ category: '企业编人员', position: '', employee_name: '',
   base_salary: 0, performance: 0, field_allowance: 0, heat_prevention: 0,
-  union_fee: 0, unit_coordination: 0, work_months: 0.1, field_months: 0, sort_order: 0 })
+  union_fee: 0, unit_coordination: 0, work_months: 1, field_months: 0, sort_order: 0 })
 let _editingPersonnelId = ''
 
 async function loadPersonnel() { personnelList.value = await projectsApi.listBudgetPersonnel(projectId) }
@@ -479,7 +544,7 @@ function openPersonnelDialog(row?: any) {
   _editingPersonnelId = row?.id || ''
   fPersonnel.value = row ? { ...row } : { category: '企业编人员', position: '', employee_name: '',
     base_salary: 0, performance: 0, field_allowance: 0, heat_prevention: 0,
-    union_fee: 0, unit_coordination: 0, work_months: 0.1, field_months: 0, sort_order: 0 }
+    union_fee: 0, unit_coordination: 0, work_months: 1, field_months: 0, sort_order: 0 }
   dlg.value.personnel = true
 }
 async function savePersonnel() {
@@ -500,6 +565,14 @@ async function deletePersonnel(id: string) {
   await projectsApi.deleteBudgetPersonnel(projectId, id)
   loadPersonnel()
 }
+
+const pSum = computed(() => {
+  const list = personnelList.value
+  const fields = ['work_months', 'field_months', 'salary_subtotal', 'welfare_subtotal', 'coordination_subtotal', 'union_subtotal', 'total']
+  const sums: Record<string, number> = {}
+  for (const f of fields) sums[f] = list.reduce((s, row) => s + (Number(row[f]) || 0), 0)
+  return sums
+})
 
 // ===== 材料费 =====
 const materialList = ref<any[]>([])
@@ -665,6 +738,7 @@ async function deleteRDOther(id: string) {
 
 // ===== 对话框状态 =====
 const dlg = ref({
+  summary: false,
   personnel: false, material: false, equipment: false,
   dc: false, labor: false, subcontract: false, rdother: false,
 })
@@ -676,16 +750,24 @@ async function exportExcel() {
     const token = authStore.token
     const url = projectsApi.getBudgetExportUrl(projectId)
     const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!resp.ok) throw new Error('导出失败')
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      throw new Error(text || '导出失败')
+    }
     const blob = await resp.blob()
+    const fileName = `${project.value?.name || '项目'}预算表.xlsx`
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${project.value?.name || '项目'}预算表.xlsx`
+    a.download = fileName
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(a.href)
-    ElMessage.success('导出成功')
-  } catch (e: any) { ElMessage.error(e.message || '导出失败') }
-  finally { exporting.value = false }
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  } catch (e: any) {
+    ElMessage.error(e.message || '导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // Tab 切换加载数据
@@ -716,4 +798,39 @@ onMounted(async () => {
 .auto-hint { font-size: 11px; color: #909399; margin-left: 4px; white-space: nowrap; }
 .profit-positive .stat-val { color: #67c23a; }
 .profit-negative .stat-val { color: #f56c6c; }
+
+.overview-table h3 {
+  font-size: 14px;
+  color: #303133;
+  margin: 16px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e4e7ed;
+}
+.overview-table h3:first-child { margin-top: 0; }
+.info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.info-table td { padding: 6px 10px; border: 1px solid #dcdfe6; vertical-align: middle; }
+.info-table td.label { background: #f5f7fa; color: #606266; font-weight: 600; width: 100px; white-space: nowrap; }
+.info-text { padding: 8px 12px; min-height: 36px; background: #fafafa; border: 1px solid #ebeef5; border-radius: 4px; font-size: 13px; color: #303133; white-space: pre-wrap; margin-bottom: 4px; }
+
+.table-summary {
+  display: flex;
+  border: 1px solid #ebeef5;
+  border-top: 2px solid #ebeef5;
+  background: #f5f7fa;
+  font-weight: 700;
+  font-size: 12px;
+}
+.sum-cell {
+  padding: 8px 6px;
+  border-right: 1px solid #ebeef5;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.sum-cell:last-child { border-right: none; }
+.sum-cell.right { text-align: right; }
+.w100 { width: 100px; }
+.w70 { width: 70px; }
+.w110 { width: 110px; }
+.w120 { width: 120px; }
+.w130 { width: 130px; }
 </style>

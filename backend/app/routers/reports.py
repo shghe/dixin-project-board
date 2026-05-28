@@ -198,6 +198,7 @@ async def personnel_report(
 async def personnel_daily_report(
     year: int = Query(...),
     month: int = Query(..., ge=1, le=12),
+    day: int | None = Query(None, ge=1, le=31),
     employee_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -207,11 +208,17 @@ async def personnel_daily_report(
     if role not in {"院长", "副院长", "综合员"}:
         employee_id = current_user.employee_id
 
-    start_date = f"{year}-{month:02d}-01"
-    if month == 12:
-        end_date = f"{year}-12-31"
+    if day:
+        from datetime import timedelta
+        d = date(year, month, day)
+        start_date = d.isoformat()
+        end_date = (d + timedelta(days=1)).isoformat()
     else:
-        end_date = f"{year}-{month+1:02d}-01"
+        start_date = f"{year}-{month:02d}-01"
+        if month == 12:
+            end_date = f"{year}-12-31"
+        else:
+            end_date = f"{year}-{month+1:02d}-01"
 
     # 查询所有在职员工
     emp_query = select(Employee).where(Employee.status == "在职")

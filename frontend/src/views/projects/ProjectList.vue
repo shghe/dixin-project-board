@@ -67,9 +67,10 @@
           </el-col>
         </el-row>
         <el-form-item label="项目经理">
-          <el-select v-model="form.manager_id" filterable clearable style="width:100%" placeholder="选择项目经理">
+          <el-select v-if="isAdmin" v-model="form.manager_id" filterable clearable style="width:100%" placeholder="选择项目经理">
             <el-option v-for="e in employees" :key="e.id" :label="e.name" :value="e.id" />
           </el-select>
+          <el-input v-else :model-value="authStore.user?.employee_name || ''" disabled />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width:100%"><el-option label="进行中" value="进行中" /><el-option label="已完成" value="已完成" /><el-option label="已暂停" value="已暂停" /></el-select>
@@ -98,6 +99,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const canEdit = computed(() => ['院长', '副院长', '项目经理'].includes(authStore.user?.role || ''))
 const canDelete = computed(() => authStore.user?.role === '院长')
+const isAdmin = computed(() => ['院长', '副院长'].includes(authStore.user?.role || ''))
 
 const list = ref<ProjectItem[]>([])
 const loading = ref(false)
@@ -176,6 +178,10 @@ async function openDialog(row?: ProjectItem) {
   } else {
     editingId.value = ''
     form.value = defaultForm()
+    // 非管理员新建项目时，项目经理默认为本人
+    if (!isAdmin.value && authStore.user?.employee_id) {
+      form.value.manager_id = authStore.user.employee_id
+    }
   }
   dialogVisible.value = true
 }

@@ -14,6 +14,11 @@
           <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
         </el-select>
       </el-col>
+      <el-col :xs="12" :sm="2">
+        <el-select v-model="day" placeholder="日期" clearable @change="loadReport">
+          <el-option v-for="d in daysInMonth" :key="d" :label="d + '日'" :value="d" />
+        </el-select>
+      </el-col>
       <el-col :xs="12" :sm="4" v-if="isAdmin">
         <el-select v-model="filterEmployeeId" placeholder="全部人员" clearable filterable @change="loadReport">
           <el-option v-for="e in employeeList" :key="e.id" :label="e.name" :value="e.id" />
@@ -103,10 +108,16 @@ const isAdmin = computed(() => ['院长', '副院长', '综合员'].includes(aut
 const now = new Date()
 const year = ref(now.getFullYear())
 const month = ref(now.getMonth() + 1)
+const day = ref<number | null>(null)
 const filterEmployeeId = ref('')
 const reportItems = ref<(PersonnelDailyItem & { _expanded: boolean })[]>([])
 const loading = ref(false)
 const employeeList = ref<EmployeeItem[]>([])
+
+const daysInMonth = computed(() => {
+  const d = new Date(year.value, month.value, 0).getDate()
+  return Array.from({ length: d }, (_, i) => i + 1)
+})
 
 const yearOptions = computed(() => {
   const ys = []
@@ -125,6 +136,7 @@ async function loadReport() {
       employeeList.value = await employeesApi.list()
     }
     const params: any = { year: year.value, month: month.value }
+    if (day.value) params.day = day.value
     if (filterEmployeeId.value) params.employee_id = filterEmployeeId.value
     const res = await reportsApi.personnelDaily(params)
     reportItems.value = (res.items || []).map(i => ({ ...i, _expanded: true }))
