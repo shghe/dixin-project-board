@@ -30,7 +30,15 @@ instance.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status
-    const msg = error.response?.data?.detail || error.message || '请求失败'
+    const detail = error.response?.data?.detail
+    let msg: string
+    if (Array.isArray(detail)) {
+      msg = detail.map((e: any) => e.msg || JSON.stringify(e)).join('; ')
+    } else if (typeof detail === 'string' && detail.trim()) {
+      msg = detail
+    } else {
+      msg = error.message || '请求失败'
+    }
     if (status === 401) {
       const requestAuthHeader = getAuthHeader(error.config?.headers)
       const currentToken = localStorage.getItem('token')

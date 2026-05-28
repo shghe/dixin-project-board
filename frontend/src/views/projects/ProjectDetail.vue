@@ -35,7 +35,7 @@
             </el-col>
           </el-row>
           <el-form-item label="实际金额"><b>¥{{ (contractForm.contract_amount * contractForm.discount_rate).toLocaleString() }}</b></el-form-item>
-          <el-form-item label="签订日期"><el-date-picker v-model="contractForm.sign_date" type="date" /></el-form-item>
+          <el-form-item label="签订日期"><el-date-picker v-model="contractForm.sign_date" type="date" value-format="YYYY-MM-DD" /></el-form-item>
           <el-row :gutter="20">
             <el-col :xs="24" :sm="12"><el-form-item label="合同起草人"><el-input v-model="contractForm.drafter" /></el-form-item></el-col>
             <el-col :xs="24" :sm="12"><el-form-item label="审核人"><el-input v-model="contractForm.reviewer" /></el-form-item></el-col>
@@ -171,8 +171,8 @@
       <el-form :model="taskForm" label-width="80px">
         <el-form-item label="任务名称"><el-input v-model="taskForm.task_name" /></el-form-item>
         <el-row :gutter="12">
-          <el-col :xs="24" :sm="12"><el-form-item label="开始日期"><el-date-picker v-model="taskForm.start_date" type="date" style="width:100%" /></el-form-item></el-col>
-          <el-col :xs="24" :sm="12"><el-form-item label="结束日期"><el-date-picker v-model="taskForm.end_date" type="date" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="开始日期"><el-date-picker v-model="taskForm.start_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
+          <el-col :xs="24" :sm="12"><el-form-item label="结束日期"><el-date-picker v-model="taskForm.end_date" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="工期(天)"><el-input-number v-model="taskForm.duration_days" :min="0" style="width:100%" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="taskForm.remark" /></el-form-item>
