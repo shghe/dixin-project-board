@@ -582,11 +582,8 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 5, round(construction_total, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 6, "元", align=s3_align_center)
     _s3_cell(ws3, r3, 8, round(construction_total * tax_rate if tax_rate > 0 else 0, 2), font=Font(name="宋体", size=16, bold=True), align=s3_align_center, fill=s2_green)
-    for rr in range(r3, r3 + 1):
-        for cc in range(1, 9):
-            ws3.cell(row=rr, column=cc).border = thin_border
-            if ws3.cell(row=rr, column=cc).alignment.vertical is None:
-                ws3.cell(row=rr, column=cc).alignment = s3_align_center
+    ws3.row_dimensions[r3].height = 31.9
+    _s3_border_row(ws3, r3)
     r3 += 1
 
     # Row 5: 1.1人工费
@@ -594,6 +591,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 2, "1.1人工费", font=s3_cat)
     _s3_cell(ws3, r3, 5, round(personnel_total, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 6, "附明细", align=s3_align_center)
+    ws3.row_dimensions[r3].height = 30.0
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -611,6 +609,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         _s3_cell(ws3, r3, 5, round(amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+        ws3.row_dimensions[r3].height = 28.15
         _s3_border_row(ws3, r3)
         r3 += 1
 
@@ -619,6 +618,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 2, "2.1材料费", font=s3_cat)
     _s3_cell(ws3, r3, 5, round(mat_total, 2), font=Font(name="宋体", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 8, round(mat_total * tax_rate if tax_rate > 0 else 0, 2), font=Font(name="宋体", size=16, bold=True), align=s3_align_center, fill=s2_green)
+    ws3.row_dimensions[r3].height = 30.0
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -635,6 +635,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         _s3_cell(ws3, r3, 5, amt, font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+        ws3.row_dimensions[r3].height = 28.15
         _s3_border_row(ws3, r3)
         r3 += 1
 
@@ -643,6 +644,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 2, "3.1机械使用费", font=Font(name="Times New Roman", size=16, bold=True))
     _s3_cell(ws3, r3, 5, round(equip_total, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 8, round(equip_total * tax_rate if tax_rate > 0 else 0, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
+    ws3.row_dimensions[r3].height = 30.0
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -653,6 +655,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 5, round(equip_total, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
     _s3_cell(ws3, r3, 8, round(equip_total * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+    ws3.row_dimensions[r3].height = 28.15
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -662,6 +665,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 5, round(dc_total, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 6, "附明细", align=s3_align_center)
     _s3_cell(ws3, r3, 8, round(dc_total * tax_rate if tax_rate > 0 else 0, 2), font=Font(name="宋体", size=16, bold=True), align=s3_align_center, fill=s2_green)
+    ws3.row_dimensions[r3].height = 30.0
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -732,6 +736,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         _s3_cell(ws3, r3, 5, round(amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+        ws3.row_dimensions[r3].height = 28.15
         _s3_border_row(ws3, r3)
         r3 += 1
         # Level 4 children
@@ -742,6 +747,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
                 _s3_cell(ws3, r3, 5, round(c_amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
                 _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
                 _s3_cell(ws3, r3, 8, round(c_amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+                ws3.row_dimensions[r3].height = 22.15
                 _s3_border_row(ws3, r3)
                 r3 += 1
 
@@ -760,21 +766,37 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=4)
         _s3_cell(ws3, r3, 1, name, font=s3_cat)
         _s3_cell(ws3, r3, 5, round(amt, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
+        # Row heights matching reference
+        if name.startswith("三"):
+            ws3.row_dimensions[r3].height = 69.0
+        elif name.startswith("七") or name.startswith("八") or name.startswith("九"):
+            ws3.row_dimensions[r3].height = 31.9
+        else:
+            ws3.row_dimensions[r3].height = 28.15
         _s3_border_row(ws3, r3)
         r3 += 1
 
-    # Set alignment for all cells in the sheet
-    for rr in range(4, r3):
+    # Note row
+    r3 += 0  # small gap
+    ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=8)
+    _s3_cell(ws3, r3, 1, "注：1、本表是以直接费和税费为计算基础而设计，如果改用其它费用为基础填写本表不适用，可另行附表。", font=s3_hdr)
+    ws3.row_dimensions[r3].height = 24.0
+    _s3_border_row(ws3, r3)
+    r3 += 1
+
+    # Signature row
+    ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=8)
+    _s3_cell(ws3, r3, 1, "填表：                       校核：                        审核：", font=s3_hdr)
+    ws3.row_dimensions[r3].height = 27.95
+    _s3_border_row(ws3, r3)
+
+    # Set borders and alignment for all content cells
+    for rr in range(4, r3 + 1):
         for cc in range(1, 9):
             cell = ws3.cell(row=rr, column=cc)
             if cell.alignment.vertical is None:
                 cell.alignment = s3_align_center
             cell.border = thin_border
-
-    # Row heights for content
-    for rr in range(4, r3):
-        if ws3.row_dimensions[rr].height is None:
-            ws3.row_dimensions[rr].height = 30 if rr <= 6 else 28.15
 
     # =====================================================================
     # Sheet 4: 1.1人工费
