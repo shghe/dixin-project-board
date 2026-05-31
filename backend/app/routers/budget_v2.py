@@ -268,6 +268,7 @@ async def get_budget_rollup(
         BudgetRollupItem(level=3, code="5401.01.01", name="职工薪酬", amount=round(salary_total, 2)),
         BudgetRollupItem(level=3, code="5401.01.02", name="职工福利费", amount=round(welfare_total, 2)),
         BudgetRollupItem(level=3, code="5401.01.03", name="单位统筹", amount=round(coord_total, 2)),
+        BudgetRollupItem(level=3, code="5401.01.05", name="工会经费", amount=round(union_total, 2)),
     ]
     items.append(BudgetRollupItem(level=2, code="1.1", name="人工费", amount=round(personnel_total, 2), children=pers_children, remark="附明细"))
 
@@ -283,6 +284,7 @@ async def get_budget_rollup(
         BudgetRollupItem(level=3, code="5401.02.01", name="原材料", amount=round(mat_by_cat.get("原材料", 0), 2)),
         BudgetRollupItem(level=3, code="5401.02.02", name="燃油", amount=round(mat_by_cat.get("燃油", 0) + mat_by_cat.get("燃油费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.02.04", name="专用材料费", amount=round(mat_by_cat.get("专用材料费", 0) + mat_by_cat.get("专用材料", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.02.05", name="技术资料费", amount=round(mat_by_cat.get("技术资料费", 0) + mat_by_cat.get("技术资料", 0), 2)),
     ]
     items.append(BudgetRollupItem(level=2, code="2.1", name="材料费", amount=round(mat_total, 2), children=mat_children))
 
@@ -290,7 +292,10 @@ async def get_budget_rollup(
     equip_result = await db.execute(select(BudgetEquipment).where(BudgetEquipment.project_id == project_id))
     equip_list = equip_result.scalars().all()
     equip_total = sum(e.amount for e in equip_list)
-    items.append(BudgetRollupItem(level=2, code="3.1", name="机械使用费", amount=round(equip_total, 2), children=[]))
+    equip_children = [
+        BudgetRollupItem(level=3, code="5401.03.02", name="设备租赁费", amount=round(equip_total, 2)),
+    ]
+    items.append(BudgetRollupItem(level=2, code="3.1", name="机械使用费", amount=round(equip_total, 2), children=equip_children))
 
     # --- 4.1 其他直接费 ---
     dc_result = await db.execute(select(BudgetDirectCost).where(BudgetDirectCost.project_id == project_id))
@@ -324,8 +329,9 @@ async def get_budget_rollup(
         BudgetRollupItem(level=3, code="5401.04.10", name="水电费", amount=round(dc_by_cat.get("水电费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.11", name="邮电费", amount=round(dc_by_cat.get("邮电费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.12", name="取暖费", amount=round(dc_by_cat.get("取暖费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.13", name="交通费", amount=round(dc_by_cat.get("交通费", 0), 2)),
     ]
-    dc_total = sum(c.amount for c in dc_children) + round(dc_by_cat.get("交通费", 0), 2)
+    dc_total = sum(c.amount for c in dc_children)
     items.append(BudgetRollupItem(level=2, code="4.1", name="其他直接费", amount=round(dc_total, 2), children=dc_children, remark="附明细"))
 
     # --- 工程施工总计 ---
