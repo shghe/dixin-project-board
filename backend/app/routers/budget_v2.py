@@ -317,19 +317,67 @@ async def get_budget_rollup(
         sub_by_cat[s.category] = sub_by_cat.get(s.category, 0) + s.amount
     sub_total = sum(sub_by_cat.values())
 
+    # 研发费用（4.1.19 和 二 都需要）
+    rd_result = await db.execute(
+        select(BudgetRDOther).where(BudgetRDOther.project_id == project_id, BudgetRDOther.cost_group == "研发费用")
+    )
+    rd_list = rd_result.scalars().all()
+    rd_total = sum(r.amount for r in rd_list)
+
+    # 其他费用
+    other_result = await db.execute(
+        select(BudgetRDOther).where(BudgetRDOther.project_id == project_id, BudgetRDOther.cost_group != "研发费用")
+    )
+    other_list = other_result.scalars().all()
+    other_total = sum(o.amount for o in other_list)
+
     dc_children = [
         BudgetRollupItem(level=3, code="5401.04.01", name="运输费", amount=round(dc_by_cat.get("运输费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.02", name="装卸费", amount=round(dc_by_cat.get("装卸费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.03", name="检验试验费", amount=round(dc_by_cat.get("试验检测费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.04", name="维修（护）费", amount=round(dc_by_cat.get("维修(护)费", 0) + dc_by_cat.get("维修费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.05", name="劳务费", amount=round(labor_total, 2)),
-        BudgetRollupItem(level=3, code="5401.04.07", name="分包工程款", amount=round(sub_total, 2), remark="附明细"),
+        BudgetRollupItem(level=3, code="5401.04.07", name="分包工程款", amount=round(sub_total, 2), remark="附明细", children=[
+            BudgetRollupItem(level=4, code="", name="工程分包费", amount=round(sub_by_cat.get("工程分包费", 0), 2)),
+            BudgetRollupItem(level=4, code="", name="劳务分包费", amount=round(sub_by_cat.get("劳务分包费", 0), 2)),
+            BudgetRollupItem(level=4, code="", name="委托技术服务费", amount=round(sub_by_cat.get("委托技术服务费", 0), 2)),
+            BudgetRollupItem(level=4, code="", name="委托试验费", amount=round(sub_by_cat.get("委托试验费", 0), 2)),
+        ]),
         BudgetRollupItem(level=3, code="5401.04.08", name="办公费", amount=round(dc_by_cat.get("办公费", 0), 2)),
         BudgetRollupItem(level=3, code="5401.04.09", name="出版印刷费", amount=round(dc_by_cat.get("出版印刷费", 0), 2)),
-        BudgetRollupItem(level=3, code="5401.04.10", name="水电费", amount=round(dc_by_cat.get("水电费", 0), 2)),
-        BudgetRollupItem(level=3, code="5401.04.11", name="邮电费", amount=round(dc_by_cat.get("邮电费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.10", name="水电费", amount=round(dc_by_cat.get("水电费", 0), 2), children=[
+            BudgetRollupItem(level=4, code="", name="水费", amount=0),
+            BudgetRollupItem(level=4, code="", name="电费", amount=0),
+        ]),
+        BudgetRollupItem(level=3, code="5401.04.11", name="邮电费", amount=round(dc_by_cat.get("邮电费", 0), 2), children=[
+            BudgetRollupItem(level=4, code="", name="邮寄费", amount=round(dc_by_cat.get("邮电费", 0), 2)),
+            BudgetRollupItem(level=4, code="", name="电话费", amount=0),
+            BudgetRollupItem(level=4, code="", name="网络费", amount=0),
+        ]),
         BudgetRollupItem(level=3, code="5401.04.12", name="取暖费", amount=round(dc_by_cat.get("取暖费", 0), 2)),
-        BudgetRollupItem(level=3, code="5401.04.13", name="交通费", amount=round(dc_by_cat.get("交通费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.13", name="交通费", amount=round(dc_by_cat.get("交通费", 0), 2), children=[
+            BudgetRollupItem(level=4, code="", name="市内交通费", amount=0),
+            BudgetRollupItem(level=4, code="", name="车辆保险费", amount=0),
+            BudgetRollupItem(level=4, code="", name="燃油费", amount=0),
+            BudgetRollupItem(level=4, code="", name="过路过桥停车费", amount=0),
+            BudgetRollupItem(level=4, code="", name="修理费", amount=0),
+            BudgetRollupItem(level=4, code="", name="交通工具租用费", amount=0),
+            BudgetRollupItem(level=4, code="", name="其他交通费", amount=0),
+        ]),
+        BudgetRollupItem(level=3, code="5401.04.14", name="差旅费", amount=round(dc_by_cat.get("差旅费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.15", name="租赁费", amount=round(dc_by_cat.get("租赁费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.16", name="招待费", amount=round(dc_by_cat.get("招待费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.17", name="咨询费", amount=round(dc_by_cat.get("咨询费", 0), 2), children=[
+            BudgetRollupItem(level=4, code="", name="咨询费", amount=0),
+            BudgetRollupItem(level=4, code="", name="评审费", amount=0),
+            BudgetRollupItem(level=4, code="", name="翻译费", amount=0),
+            BudgetRollupItem(level=4, code="", name="其他中介费用支出", amount=0),
+        ]),
+        BudgetRollupItem(level=3, code="5401.04.18", name="劳动保护费", amount=round(dc_by_cat.get("劳动保护费", 0), 2)),
+        BudgetRollupItem(level=3, code="5401.04.19", name="其他直接费", amount=round(rd_total + other_total, 2), children=[
+            BudgetRollupItem(level=4, code="", name="研发费用", amount=round(rd_total, 2)),
+            BudgetRollupItem(level=4, code="", name="其他费用", amount=round(other_total, 2)),
+        ]),
     ]
     dc_total = sum(c.amount for c in dc_children)
     items.append(BudgetRollupItem(level=2, code="4.1", name="其他直接费", amount=round(dc_total, 2), children=dc_children, remark="附明细"))
@@ -337,58 +385,33 @@ async def get_budget_rollup(
     # --- 工程施工总计 ---
     construction_total = personnel_total + mat_total + equip_total + dc_total
 
-    # --- 研发费用 ---
-    rd_result = await db.execute(
-        select(BudgetRDOther).where(BudgetRDOther.project_id == project_id, BudgetRDOther.cost_group == "研发费用")
-    )
-    rd_list = rd_result.scalars().all()
-    rd_total = sum(r.amount for r in rd_list)
-    rd_children = [
-        BudgetRollupItem(level=2, code="4.1.19.1", name="研发费用", amount=round(rd_total, 2)),
-    ]
-
-    # --- 其他费用 ---
-    other_result = await db.execute(
-        select(BudgetRDOther).where(BudgetRDOther.project_id == project_id, BudgetRDOther.cost_group != "研发费用")
-    )
-    other_list = other_result.scalars().all()
-    other_total = sum(o.amount for o in other_list)
-
-    # 总工程费用 = 工程施工 + 研发 + 其他
-    engineering_total = construction_total + rd_total + other_total
-
-    # 税务计算（匹配 Excel 公式）
+    # 税务计算
     sum_result = await db.execute(select(BudgetSummary).where(BudgetSummary.project_id == project_id))
     summary = sum_result.scalar_one_or_none()
     tax_rate = summary.tax_rate if summary else 0
     contract_amount = summary.contract_amount if summary else 0
     han_shui = contract_amount
     xiao_xiang = round(han_shui / (1 + tax_rate) * tax_rate, 2) if tax_rate > 0 else 0
-    jin_xiang = 0  # 可抵扣进项增值税
+    jin_xiang = 0
     ying_jiao = round(xiao_xiang - jin_xiang, 2)
     fu_jia = round(ying_jiao * 0.12, 2)
-    gong_cheng_cb = round(construction_total + fu_jia, 2)
+    gong_cheng_cb = round(construction_total - rd_total + fu_jia, 2)
     shui_hou_sr = round(han_shui / (1 + tax_rate), 2) if tax_rate > 0 else han_shui
     mao_li_run = round(shui_hou_sr - gong_cheng_cb, 2)
 
     total_items = [
         BudgetRollupItem(level=1, code="一", name="工程施工", amount=round(construction_total, 2), children=items),
+        BudgetRollupItem(level=1, code="二", name="公司承担研发费用", amount=round(rd_total, 2)),
+        BudgetRollupItem(level=1, code="三", name=f"销项增值税（含税合同额/{1+tax_rate}×{tax_rate}）", amount=xiao_xiang),
+        BudgetRollupItem(level=1, code="四", name="可抵扣进项增值税合计", amount=jin_xiang),
+        BudgetRollupItem(level=1, code="五", name="应缴税额=（三-四）", amount=ying_jiao),
+        BudgetRollupItem(level=1, code="六", name="附加税=五*附加税率", amount=fu_jia),
+        BudgetRollupItem(level=1, code="七", name="工程成本费用=（一-二+六）", amount=gong_cheng_cb),
+        BudgetRollupItem(level=1, code="八", name="税后收入=含税合同额/（1+税率）", amount=shui_hou_sr),
+        BudgetRollupItem(level=1, code="九", name="工程预算毛利润=八-七", amount=mao_li_run),
     ]
-    if rd_total > 0:
-        total_items.extend(rd_children)
-    if other_total > 0:
-        total_items.append(BudgetRollupItem(level=1, code="二", name="其他费用", amount=round(other_total, 2)))
 
-    # 税务行
-    total_items.append(BudgetRollupItem(level=1, code="三", name=f"销项增值税（含税合同额/{1+tax_rate}×{tax_rate}）", amount=xiao_xiang))
-    total_items.append(BudgetRollupItem(level=1, code="四", name="可抵扣进项增值税合计", amount=jin_xiang))
-    total_items.append(BudgetRollupItem(level=1, code="五", name="应缴税额", amount=ying_jiao))
-    total_items.append(BudgetRollupItem(level=1, code="六", name="附加税（×12%）", amount=fu_jia))
-    total_items.append(BudgetRollupItem(level=1, code="七", name="工程成本费用", amount=gong_cheng_cb))
-    total_items.append(BudgetRollupItem(level=1, code="八", name="税后收入", amount=shui_hou_sr))
-    total_items.append(BudgetRollupItem(level=1, code="九", name="工程预算毛利润", amount=mao_li_run))
-
-    return BudgetRollupResponse(total=round(engineering_total, 2), contract_amount=han_shui, tax_rate=tax_rate,
+    return BudgetRollupResponse(total=round(construction_total, 2), contract_amount=han_shui, tax_rate=tax_rate,
                                 xiao_xiang=xiao_xiang, jin_xiang=jin_xiang, ying_jiao=ying_jiao,
                                 fu_jia=fu_jia, gong_cheng_cb=gong_cheng_cb, shui_hou_sr=shui_hou_sr, mao_li_run=mao_li_run,
                                 items=total_items)

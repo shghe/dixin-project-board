@@ -134,6 +134,9 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     equip_total = sum(e.amount for e in equip_list)
     labor_total = sum(l.amount for l in labor_list)
     sub_total = sum(s2.amount for s2 in sub_list)
+    sub_by_cat = {}
+    for s2 in sub_list:
+        sub_by_cat[s2.category] = sub_by_cat.get(s2.category, 0) + s2.amount
 
     def dc_sum(cat):
         return sum(d.amount for d in dc_list if d.category == cat)
@@ -151,11 +154,16 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ("邮电费", dc_sum("邮电费")),
         ("取暖费", dc_sum("取暖费")),
         ("交通费", dc_sum("交通费")),
+        ("差旅费", dc_sum("差旅费")),
+        ("租赁费", dc_sum("租赁费")),
+        ("招待费", dc_sum("招待费")),
+        ("咨询费", dc_sum("咨询费")),
+        ("劳动保护费", dc_sum("劳动保护费")),
     ]
-    dc_total = sum(a for _, a in dc_all)
-    construction_total = personnel_total + mat_total + equip_total + dc_total
     rd_total = sum(r.amount for r in rd_list)
     other_total = sum(o.amount for o in other_list)
+    dc_total = sum(a for _, a in dc_all) + rd_total + other_total
+    construction_total = personnel_total + mat_total + equip_total + dc_total
 
     han_shui = contract_amount
     shui_lv = tax_rate
@@ -163,7 +171,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     jin_xiang = 0
     ying_jiao = round(xiao_xiang - jin_xiang, 2)
     fu_jia = round(ying_jiao * 0.12, 2)
-    gong_cheng_cb = round(construction_total + fu_jia, 2)
+    gong_cheng_cb = round(construction_total - rd_total + fu_jia, 2)
     shui_hou_sr = round(han_shui / (1 + shui_lv), 2) if shui_lv > 0 else han_shui
     mao_li_run = round(shui_hou_sr - gong_cheng_cb, 2)
     li_run_lv = round(mao_li_run / shui_hou_sr, 4) if shui_hou_sr > 0 else 0
@@ -658,24 +666,66 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     r3 += 1
 
     # Direct cost sub-items (matching reference tree)
-    dc_tree = [
-        ("⑴运输费", er_total),
-        ("⑵装卸费", xie_total),
-        ("⑶检验试验费", jianyan_total),
-        ("⑷维修（护）费", weixiu_total),
-        ("⑸劳务费", labor_total),
-        ("⑺分包工程款", sub_total),
-        ("⑻办公费", bangong_total),
-        ("⑼出版印刷费", chuban_total),
-        ("⑽水电费", shuidian_total),
-        ("⑾邮电费", youdian_total),
-        ("⑿取暖费", qunuan_total),
-        ("⒀交通费", jiaotong_total),
+    # Level 3 items, some with Level 4 children
+    dc_items = [
+        # Simple items (level 3 only)
+        ("⑴运输费", dc_sum("运输费"), None),
+        ("⑵装卸费", dc_sum("装卸费"), None),
+        ("⑶检验试验费", dc_sum("试验检测费"), None),
+        ("⑷维修（护）费", dc_sum("维修(护)费") + dc_sum("维修费"), None),
+        ("⑸劳务费", labor_total, None),
+        # ⑺分包工程款 with level-4 detail
+        ("⑺分包工程款", sub_total, [
+            ("①工程分包费", sub_by_cat.get("工程分包费", 0)),
+            ("②劳务分包费", sub_by_cat.get("劳务分包费", 0)),
+            ("③委托技术服务费", sub_by_cat.get("委托技术服务费", 0)),
+            ("④委托试验费", sub_by_cat.get("委托试验费", 0)),
+        ]),
+        ("⑻办公费", dc_sum("办公费"), None),
+        ("⑼出版印刷费", dc_sum("出版印刷费"), None),
+        # ⑽水电费 with level-4 detail
+        ("⑽水电费", dc_sum("水电费"), [
+            ("①水费", 0),
+            ("②电费", 0),
+        ]),
+        # ⑾邮电费 with level-4 detail
+        ("⑾邮电费", dc_sum("邮电费"), [
+            ("①邮寄费", dc_sum("邮电费")),
+            ("②电话费", 0),
+            ("③网络费", 0),
+        ]),
+        ("⑿取暖费", dc_sum("取暖费"), None),
+        # ⒀交通费 with level-4 detail
+        ("⒀交通费", dc_sum("交通费"), [
+            ("①市内交通费", 0),
+            ("②车辆保险费", 0),
+            ("③燃油费", 0),
+            ("④过路过桥停车费", 0),
+            ("⑤修理费", 0),
+            ("⑥交通工具租用费", 0),
+            ("⑦其他交通费", 0),
+        ]),
+        ("⒁差旅费", dc_sum("差旅费"), None),
+        ("⒂租赁费", dc_sum("租赁费"), None),
+        ("⒃招待费", dc_sum("招待费"), None),
+        # ⒄咨询费 with level-4 detail
+        ("⒄咨询费", dc_sum("咨询费"), [
+            ("①咨询费", 0),
+            ("②评审费", 0),
+            ("③翻译费", 0),
+            ("④其他中介费用支出", 0),
+        ]),
+        ("⒅劳动保护费", dc_sum("劳动保护费"), None),
+        # ⒆其他直接费 with level-4 detail
+        ("⒆其他直接费", rd_total + other_total, [
+            ("①研发费用", rd_total),
+            ("②其他费用", other_total),
+        ]),
     ]
-    for name, amt in dc_tree:
-        if amt == 0 and name not in ["⑸劳务费", "⑺分包工程款"]:
+    for name, amt, children in dc_items:
+        if amt == 0 and name not in ("⑸劳务费", "⑺分包工程款", "⒆其他直接费"):
             # Skip sub-items with 0 amount, except structural ones
-            pass
+            continue
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
         _s3_cell(ws3, r3, 1, name, font=s3_item)
@@ -684,30 +734,20 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
         _s3_border_row(ws3, r3)
         r3 += 1
-
-    # Empty separator
-    ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=4)
-    _s3_cell(ws3, r3, 1, "", font=s3_cat)
-    _s3_border_row(ws3, r3)
-    r3 += 1
-
-    # R&D and other costs (if any)
-    if rd_total > 0:
-        ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=4)
-        _s3_cell(ws3, r3, 1, "研发费用", font=s3_cat)
-        _s3_cell(ws3, r3, 5, round(rd_total, 2), align=s3_align_center, fill=s2_green)
-        _s3_border_row(ws3, r3)
-        r3 += 1
-    if other_total > 0:
-        ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=4)
-        _s3_cell(ws3, r3, 1, "其他费用", font=s3_cat)
-        _s3_cell(ws3, r3, 5, round(other_total, 2), align=s3_align_center, fill=s2_green)
-        _s3_border_row(ws3, r3)
-        r3 += 1
+        # Level 4 children
+        if children:
+            for c_name, c_amt in children:
+                ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=3)
+                _s3_cell(ws3, r3, 1, c_name, font=s3_item)
+                _s3_cell(ws3, r3, 5, round(c_amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
+                _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
+                _s3_cell(ws3, r3, 8, round(c_amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
+                _s3_border_row(ws3, r3)
+                r3 += 1
 
     # Tax section
     tax3 = [
-        ("二、公司承担研发费用", 0),
+        ("二、公司承担研发费用", rd_total),
         (f"三、销项增值税 = 含税合同额/(1+{tax_rate})×{tax_rate}", xiao_xiang),
         ("四、可抵扣进项增值税合计", jin_xiang),
         ("五、应缴税额 = (三 - 四)", ying_jiao),
