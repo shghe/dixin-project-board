@@ -594,7 +594,6 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ("⑴职工薪酬", salary_total),
         ("⑵职工福利费", welfare_total),
         ("⑶单位统筹", coord_total),
-        ("⑷工会经费", union_total),
     ]
     for name, amt in pers_subs:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
@@ -618,7 +617,6 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ("⑴原材料", mat_yuan),
         ("⑵专用材料费", mat_zhuan),
         ("⑶燃油", mat_ran),
-        ("⑷技术资料费", mat_tech),
     ]
     for name, amt in mat_subs:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
@@ -635,16 +633,6 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     _s3_cell(ws3, r3, 2, "3.1机械使用费", font=Font(name="Times New Roman", size=16, bold=True))
     _s3_cell(ws3, r3, 5, round(equip_total, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 8, round(equip_total * tax_rate if tax_rate > 0 else 0, 2), font=Font(name="Times New Roman", size=16, bold=True), align=s3_align_center, fill=s2_green)
-    _s3_border_row(ws3, r3)
-    r3 += 1
-
-    # 设备租赁费
-    ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
-    ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
-    _s3_cell(ws3, r3, 1, "⑴设备租赁费", font=s3_item)
-    _s3_cell(ws3, r3, 5, round(equip_total, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
-    _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
-    _s3_cell(ws3, r3, 8, round(equip_total * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
     _s3_border_row(ws3, r3)
     r3 += 1
 
@@ -670,12 +658,11 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ("⑽水电费", shuidian_total),
         ("⑾邮电费", youdian_total),
         ("⑿取暖费", qunuan_total),
-        ("⒀交通费", jiaotong_total),
     ]
     for name, amt in dc_tree:
         if amt == 0 and name not in ["⑸劳务费", "⑺分包工程款"]:
             # Skip sub-items with 0 amount, except structural ones
-            pass
+            continue
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
         _s3_cell(ws3, r3, 1, name, font=s3_item)
