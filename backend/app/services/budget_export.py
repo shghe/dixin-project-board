@@ -605,7 +605,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     for name, amt in pers_subs:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
-        _s3_cell(ws3, r3, 1, name, font=s3_item)
+        _s3_cell(ws3, r3, 3, name, font=s3_item)  # Level 3 text in column C
         _s3_cell(ws3, r3, 5, round(amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
@@ -631,7 +631,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     for name, amt in mat_subs:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
-        _s3_cell(ws3, r3, 1, name, font=s3_item)
+        _s3_cell(ws3, r3, 3, name, font=s3_item)  # Level 3 text in column C
         _s3_cell(ws3, r3, 5, amt, font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
@@ -651,7 +651,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     # 设备租赁费
     ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
     ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
-    _s3_cell(ws3, r3, 1, "⑴设备租赁费", font=s3_item)
+    _s3_cell(ws3, r3, 3, "⑴设备租赁费", font=s3_item)  # Level 3 text in column C
     _s3_cell(ws3, r3, 5, round(equip_total, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
     _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
     _s3_cell(ws3, r3, 8, round(equip_total * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
@@ -729,7 +729,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
     for name, amt, children in dc_items:
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
-        _s3_cell(ws3, r3, 1, name, font=s3_item)
+        _s3_cell(ws3, r3, 3, name, font=s3_item)  # Level 3 text in column C
         _s3_cell(ws3, r3, 5, round(amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
         _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
         _s3_cell(ws3, r3, 8, round(amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
@@ -740,7 +740,7 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         if children:
             for c_name, c_amt in children:
                 ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=3)
-                _s3_cell(ws3, r3, 1, c_name, font=s3_item)
+                _s3_cell(ws3, r3, 4, c_name, font=s3_item)  # Level 4 text in column D
                 _s3_cell(ws3, r3, 5, round(c_amt, 2), font=Font(name="Times New Roman", size=16), align=s3_align_center, fill=s2_green)
                 _s3_cell(ws3, r3, 7, tax_rate if tax_rate > 0 else "", align=s3_align_center)
                 _s3_cell(ws3, r3, 8, round(c_amt * tax_rate, 2) if tax_rate > 0 else "", align=s3_align_center, fill=s2_green)
