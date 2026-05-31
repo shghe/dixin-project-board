@@ -252,6 +252,80 @@ async def get_budget_rollup(
     current_user: User = Depends(get_current_user),
 ):
     """生成总表汇总数据"""
+    # 科目代码及包括事项（来自参考Excel "项目成本科目及归集说明" sheet）
+    def _info(code_desc="", includes=""):
+        return code_desc, includes
+
+    _ITEM_INFO = {
+        # 人工费子项
+        "职工薪酬": _info("5401.01.01", "基本工资、津贴补贴和基础绩效工资、野外津贴"),
+        "职工福利费": _info("5401.01.02", "特指防暑降温费"),
+        "单位统筹": _info("5401.01.03", "反映单位为在职人员缴纳的养老保险、职业年金、医疗保险、工伤保险、失业保险等各类社会保险费、残保金及住房公积金。（单位计提部分）"),
+        "工会经费": _info("5401.01.05", "反映单位单位计提的工会经费"),
+        # 材料费子项
+        "原材料": _info("5401.02.01", "除专用材料外的钢材、水泥、粒料、土方等材料"),
+        "专用材料费": _info("5401.02.04", "为项目采购的或者专项定制的钻杆、钻具、钻头、地质管等材料"),
+        "燃油": _info("5401.02.02", "为动力设备提供的燃油费（柴油费用）"),
+        "技术资料费": _info("5401.02.05", "购买标书费、资料收集费"),
+        # 机械使用费子项
+        "设备租赁费": _info("5401.03.02", "租赁机械设备仪器发生的费用（非交通工具）"),
+        "折旧费": _info("5401.03.01", "自有设备折旧费"),
+        # 其他直接费子项
+        "运输费": _info("5401.04.01", "运输费用"),
+        "装卸费": _info("5401.04.02", "装卸费用、转运费用、搬倒费用"),
+        "检验试验费": _info("5401.04.03", "水泥、钢筋等原材料的抽检费用"),
+        "维修（护）费": _info("5401.04.04", "机械设备维修"),
+        "劳务费": _info("5401.04.05", ""),
+        "分包工程款": _info("5401.04.07", "劳务分包、专业分包、技术服务费、委托试验费等费用"),
+        "办公费": _info("5401.04.08", "购买办公耗材、办公器具、临时办公配套设施费、生活用品等"),
+        "出版印刷费": _info("5401.04.09", "报告装订、打印费用"),
+        "水电费": _info("5401.04.10", ""),
+        "邮电费": _info("5401.04.11", ""),
+        "取暖费": _info("", ""),
+        "交通费": _info("5401.04.13", ""),
+        "差旅费": _info("5401.04.14", "因公出差发生的差旅费、食堂采购费用、伙食补贴"),
+        "租赁费": _info("5401.04.15", "房租"),
+        "招待费": _info("5401.04.16", "业务招待费用"),
+        "咨询费": _info("5401.04.17", ""),
+        "劳动保护费": _info("5401.04.18", "劳保用品、药品、意外伤害险、安全生产责任险、安全警示费用"),
+        "其他直接费": _info("5401.04.99", ""),
+        # 四级子项
+        "工程分包费": _info("", ""),
+        "劳务分包费": _info("", ""),
+        "委托技术服务费": _info("", ""),
+        "委托试验费": _info("", ""),
+        "水费": _info("5401.04.10.01", "项目上发生的水费"),
+        "电费": _info("5401.04.10.02", "项目上发生的电费"),
+        "邮寄费": _info("5401.04.11.01", "快递费"),
+        "电话费": _info("", ""),
+        "网络费": _info("5401.04.11.03", "电话网络通讯费用"),
+        "市内交通费": _info("5401.04.13.01", "秦皇岛市内、项目所在地城镇交通费"),
+        "车辆保险费": _info("5401.04.13.02", "单位车辆保险费"),
+        "咨询费_sub4": _info("5401.04.17.01", "项目咨询费用"),  # Level 4咨询费（与Level 3同名）
+        "评审费": _info("5401.04.17.02", "专家评审费用"),
+        "翻译费": _info("5401.04.17.03", "翻译费用"),
+        "其他中介费用支出": _info("5401.04.17.04", "中标服务费"),
+        "临时聘用人员": _info("5401.04.05.01", "劳务派遣人员费用及管理费"),
+        # 燃油费（交通费四级 - 注意与材料费燃油区分）
+        "燃油费_sub4": _info("5401.04.13.03", "单位车辆及纳入公车管理的车辆油费（租用一年以上的车辆）"),
+        "过路过桥停车费": _info("5401.04.13.04", "单位车辆及纳入公车管理的车辆过路过桥费用（租用一年以上的车辆）"),
+        "修理费_sub4": _info("5401.04.13.05", "单位车辆及纳入公车管理的车辆（租用一年以上的车辆）维修保养费"),
+        "交通工具租用费": _info("5401.04.13.06", "短期租用车辆所有费用（一年及一年以下）（该费用包含车辆租赁费用、车辆保险、日常的修理费、过路过桥费、燃油费用和司机费用）"),
+        "其他交通费": _info("5401.04.13.07", ""),
+        "研发费用": _info("", ""),
+        "其他费用": _info("", "保函手续费、青苗补偿费、工程排污费等以上科目不包含的费用"),
+    }
+
+    def _info_for(name, is_level4=False):
+        """返回 dict 用于 BudgetRollupItem(**_)"""
+        if is_level4:
+            sub4_key = name + "_sub4"
+            if sub4_key in _ITEM_INFO:
+                cd, inc = _ITEM_INFO[sub4_key]
+                return {"code_desc": cd, "includes": inc}
+        cd, inc = _ITEM_INFO.get(name, ("", ""))
+        return {"code_desc": cd, "includes": inc}
+
     items = []
 
     # --- 1.1 人工费 ---
@@ -265,12 +339,12 @@ async def get_budget_rollup(
     personnel_total = salary_total + welfare_total + coord_total + union_total
 
     pers_children = [
-        BudgetRollupItem(level=3, code="⑴", name="职工薪酬", amount=round(salary_total, 2)),
-        BudgetRollupItem(level=3, code="⑵", name="职工福利费", amount=round(welfare_total, 2)),
-        BudgetRollupItem(level=3, code="⑶", name="单位统筹", amount=round(coord_total, 2)),
-        BudgetRollupItem(level=3, code="⑷", name="工会经费", amount=round(union_total, 2)),
+        BudgetRollupItem(level=3, code="⑴", name="职工薪酬", amount=round(salary_total, 2), **_info_for("职工薪酬")),
+        BudgetRollupItem(level=3, code="⑵", name="职工福利费", amount=round(welfare_total, 2), **_info_for("职工福利费")),
+        BudgetRollupItem(level=3, code="⑶", name="单位统筹", amount=round(coord_total, 2), **_info_for("单位统筹")),
+        BudgetRollupItem(level=3, code="⑷", name="工会经费", amount=round(union_total, 2), **_info_for("工会经费")),
     ]
-    items.append(BudgetRollupItem(level=2, code="1.1", name="人工费", amount=round(personnel_total, 2), children=pers_children, remark="附明细"))
+    items.append(BudgetRollupItem(level=2, code="1.1", name="人工费", amount=round(personnel_total, 2), children=pers_children, remark="附明细", includes="企事业编"))
 
     # --- 2.1 材料费 ---
     mat_result = await db.execute(select(BudgetMaterial).where(BudgetMaterial.project_id == project_id))
@@ -281,10 +355,10 @@ async def get_budget_rollup(
         mat_by_cat[cat] = mat_by_cat.get(cat, 0) + m.amount
     mat_total = sum(mat_by_cat.values())
     mat_children = [
-        BudgetRollupItem(level=3, code="⑴", name="原材料", amount=round(mat_by_cat.get("原材料", 0), 2)),
-        BudgetRollupItem(level=3, code="⑵", name="专用材料费", amount=round(mat_by_cat.get("专用材料费", 0) + mat_by_cat.get("专用材料", 0), 2)),
-        BudgetRollupItem(level=3, code="⑶", name="燃油", amount=round(mat_by_cat.get("燃油", 0) + mat_by_cat.get("燃油费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑷", name="技术资料费", amount=round(mat_by_cat.get("技术资料费", 0) + mat_by_cat.get("技术资料", 0), 2)),
+        BudgetRollupItem(level=3, code="⑴", name="原材料", amount=round(mat_by_cat.get("原材料", 0), 2), **_info_for("原材料")),
+        BudgetRollupItem(level=3, code="⑵", name="专用材料费", amount=round(mat_by_cat.get("专用材料费", 0) + mat_by_cat.get("专用材料", 0), 2), **_info_for("专用材料费")),
+        BudgetRollupItem(level=3, code="⑶", name="燃油", amount=round(mat_by_cat.get("燃油", 0) + mat_by_cat.get("燃油费", 0), 2), **_info_for("燃油")),
+        BudgetRollupItem(level=3, code="⑷", name="技术资料费", amount=round(mat_by_cat.get("技术资料费", 0) + mat_by_cat.get("技术资料", 0), 2), **_info_for("技术资料费")),
     ]
     items.append(BudgetRollupItem(level=2, code="2.1", name="材料费", amount=round(mat_total, 2), children=mat_children))
 
@@ -293,7 +367,7 @@ async def get_budget_rollup(
     equip_list = equip_result.scalars().all()
     equip_total = sum(e.amount for e in equip_list)
     equip_children = [
-        BudgetRollupItem(level=3, code="⑴", name="设备租赁费", amount=round(equip_total, 2)),
+        BudgetRollupItem(level=3, code="⑴", name="设备租赁费", amount=round(equip_total, 2), **_info_for("设备租赁费")),
     ]
     items.append(BudgetRollupItem(level=2, code="3.1", name="机械使用费", amount=round(equip_total, 2), children=equip_children))
 
@@ -332,51 +406,51 @@ async def get_budget_rollup(
     other_total = sum(o.amount for o in other_list)
 
     dc_children = [
-        BudgetRollupItem(level=3, code="⑴", name="运输费", amount=round(dc_by_cat.get("运输费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑵", name="装卸费", amount=round(dc_by_cat.get("装卸费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑶", name="检验试验费", amount=round(dc_by_cat.get("试验检测费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑷", name="维修（护）费", amount=round(dc_by_cat.get("维修(护)费", 0) + dc_by_cat.get("维修费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑸", name="劳务费", amount=round(labor_total, 2)),
-        BudgetRollupItem(level=3, code="⑺", name="分包工程款", amount=round(sub_total, 2), remark="附明细", children=[
-            BudgetRollupItem(level=4, code="①", name="工程分包费", amount=round(sub_by_cat.get("工程分包费", 0), 2)),
-            BudgetRollupItem(level=4, code="②", name="劳务分包费", amount=round(sub_by_cat.get("劳务分包费", 0), 2)),
-            BudgetRollupItem(level=4, code="③", name="委托技术服务费", amount=round(sub_by_cat.get("委托技术服务费", 0), 2)),
-            BudgetRollupItem(level=4, code="④", name="委托试验费", amount=round(sub_by_cat.get("委托试验费", 0), 2)),
+        BudgetRollupItem(level=3, code="⑴", name="运输费", amount=round(dc_by_cat.get("运输费", 0), 2), **_info_for("运输费")),
+        BudgetRollupItem(level=3, code="⑵", name="装卸费", amount=round(dc_by_cat.get("装卸费", 0), 2), **_info_for("装卸费")),
+        BudgetRollupItem(level=3, code="⑶", name="检验试验费", amount=round(dc_by_cat.get("试验检测费", 0), 2), **_info_for("检验试验费")),
+        BudgetRollupItem(level=3, code="⑷", name="维修（护）费", amount=round(dc_by_cat.get("维修(护)费", 0) + dc_by_cat.get("维修费", 0), 2), **_info_for("维修（护）费")),
+        BudgetRollupItem(level=3, code="⑸", name="劳务费", amount=round(labor_total, 2), **_info_for("劳务费")),
+        BudgetRollupItem(level=3, code="⑺", name="分包工程款", amount=round(sub_total, 2), remark="附明细", **_info_for("分包工程款"), children=[
+            BudgetRollupItem(level=4, code="①", name="工程分包费", amount=round(sub_by_cat.get("工程分包费", 0), 2), **_info_for("工程分包费", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="劳务分包费", amount=round(sub_by_cat.get("劳务分包费", 0), 2), **_info_for("劳务分包费", is_level4=True)),
+            BudgetRollupItem(level=4, code="③", name="委托技术服务费", amount=round(sub_by_cat.get("委托技术服务费", 0), 2), **_info_for("委托技术服务费", is_level4=True)),
+            BudgetRollupItem(level=4, code="④", name="委托试验费", amount=round(sub_by_cat.get("委托试验费", 0), 2), **_info_for("委托试验费", is_level4=True)),
         ]),
-        BudgetRollupItem(level=3, code="⑻", name="办公费", amount=round(dc_by_cat.get("办公费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑼", name="出版印刷费", amount=round(dc_by_cat.get("出版印刷费", 0), 2)),
-        BudgetRollupItem(level=3, code="⑽", name="水电费", amount=round(dc_by_cat.get("水电费", 0), 2), children=[
-            BudgetRollupItem(level=4, code="①", name="水费", amount=0),
-            BudgetRollupItem(level=4, code="②", name="电费", amount=0),
+        BudgetRollupItem(level=3, code="⑻", name="办公费", amount=round(dc_by_cat.get("办公费", 0), 2), **_info_for("办公费")),
+        BudgetRollupItem(level=3, code="⑼", name="出版印刷费", amount=round(dc_by_cat.get("出版印刷费", 0), 2), **_info_for("出版印刷费")),
+        BudgetRollupItem(level=3, code="⑽", name="水电费", amount=round(dc_by_cat.get("水电费", 0), 2), **_info_for("水电费"), children=[
+            BudgetRollupItem(level=4, code="①", name="水费", amount=0, **_info_for("水费", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="电费", amount=0, **_info_for("电费", is_level4=True)),
         ]),
-        BudgetRollupItem(level=3, code="⑾", name="邮电费", amount=round(dc_by_cat.get("邮电费", 0), 2), children=[
-            BudgetRollupItem(level=4, code="①", name="邮寄费", amount=round(dc_by_cat.get("邮电费", 0), 2)),
-            BudgetRollupItem(level=4, code="②", name="电话费", amount=0),
-            BudgetRollupItem(level=4, code="③", name="网络费", amount=0),
+        BudgetRollupItem(level=3, code="⑾", name="邮电费", amount=round(dc_by_cat.get("邮电费", 0), 2), **_info_for("邮电费"), children=[
+            BudgetRollupItem(level=4, code="①", name="邮寄费", amount=round(dc_by_cat.get("邮电费", 0), 2), **_info_for("邮寄费", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="电话费", amount=0, **_info_for("电话费", is_level4=True)),
+            BudgetRollupItem(level=4, code="③", name="网络费", amount=0, **_info_for("网络费", is_level4=True)),
         ]),
-        BudgetRollupItem(level=3, code="⑿", name="取暖费", amount=round(dc_by_cat.get("取暖费", 0), 2)),
-        BudgetRollupItem(level=3, code="⒀", name="交通费", amount=round(dc_by_cat.get("交通费", 0), 2), children=[
-            BudgetRollupItem(level=4, code="①", name="市内交通费", amount=0),
-            BudgetRollupItem(level=4, code="②", name="车辆保险费", amount=0),
-            BudgetRollupItem(level=4, code="③", name="燃油费", amount=0),
-            BudgetRollupItem(level=4, code="④", name="过路过桥停车费", amount=0),
-            BudgetRollupItem(level=4, code="⑤", name="修理费", amount=0),
-            BudgetRollupItem(level=4, code="⑥", name="交通工具租用费", amount=0),
-            BudgetRollupItem(level=4, code="⑦", name="其他交通费", amount=0),
+        BudgetRollupItem(level=3, code="⑿", name="取暖费", amount=round(dc_by_cat.get("取暖费", 0), 2), **_info_for("取暖费")),
+        BudgetRollupItem(level=3, code="⒀", name="交通费", amount=round(dc_by_cat.get("交通费", 0), 2), **_info_for("交通费"), children=[
+            BudgetRollupItem(level=4, code="①", name="市内交通费", amount=0, **_info_for("市内交通费", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="车辆保险费", amount=0, **_info_for("车辆保险费", is_level4=True)),
+            BudgetRollupItem(level=4, code="③", name="燃油费", amount=0, **_info_for("燃油费", is_level4=True)),
+            BudgetRollupItem(level=4, code="④", name="过路过桥停车费", amount=0, **_info_for("过路过桥停车费", is_level4=True)),
+            BudgetRollupItem(level=4, code="⑤", name="修理费", amount=0, **_info_for("修理费", is_level4=True)),
+            BudgetRollupItem(level=4, code="⑥", name="交通工具租用费", amount=0, **_info_for("交通工具租用费", is_level4=True)),
+            BudgetRollupItem(level=4, code="⑦", name="其他交通费", amount=0, **_info_for("其他交通费", is_level4=True)),
         ]),
-        BudgetRollupItem(level=3, code="⒁", name="差旅费", amount=round(dc_by_cat.get("差旅费", 0), 2)),
-        BudgetRollupItem(level=3, code="⒂", name="租赁费", amount=round(dc_by_cat.get("租赁费", 0), 2)),
-        BudgetRollupItem(level=3, code="⒃", name="招待费", amount=round(dc_by_cat.get("招待费", 0), 2)),
-        BudgetRollupItem(level=3, code="⒄", name="咨询费", amount=round(dc_by_cat.get("咨询费", 0), 2), children=[
-            BudgetRollupItem(level=4, code="①", name="咨询费", amount=0),
-            BudgetRollupItem(level=4, code="②", name="评审费", amount=0),
-            BudgetRollupItem(level=4, code="③", name="翻译费", amount=0),
-            BudgetRollupItem(level=4, code="④", name="其他中介费用支出", amount=0),
+        BudgetRollupItem(level=3, code="⒁", name="差旅费", amount=round(dc_by_cat.get("差旅费", 0), 2), **_info_for("差旅费")),
+        BudgetRollupItem(level=3, code="⒂", name="租赁费", amount=round(dc_by_cat.get("租赁费", 0), 2), **_info_for("租赁费")),
+        BudgetRollupItem(level=3, code="⒃", name="招待费", amount=round(dc_by_cat.get("招待费", 0), 2), **_info_for("招待费")),
+        BudgetRollupItem(level=3, code="⒄", name="咨询费", amount=round(dc_by_cat.get("咨询费", 0), 2), **_info_for("咨询费"), children=[
+            BudgetRollupItem(level=4, code="①", name="咨询费", amount=0, **_info_for("咨询费", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="评审费", amount=0, **_info_for("评审费", is_level4=True)),
+            BudgetRollupItem(level=4, code="③", name="翻译费", amount=0, **_info_for("翻译费", is_level4=True)),
+            BudgetRollupItem(level=4, code="④", name="其他中介费用支出", amount=0, **_info_for("其他中介费用支出", is_level4=True)),
         ]),
-        BudgetRollupItem(level=3, code="⒅", name="劳动保护费", amount=round(dc_by_cat.get("劳动保护费", 0), 2)),
-        BudgetRollupItem(level=3, code="⒆", name="其他直接费", amount=round(rd_total + other_total, 2), children=[
-            BudgetRollupItem(level=4, code="①", name="研发费用", amount=round(rd_total, 2)),
-            BudgetRollupItem(level=4, code="②", name="其他费用", amount=round(other_total, 2)),
+        BudgetRollupItem(level=3, code="⒅", name="劳动保护费", amount=round(dc_by_cat.get("劳动保护费", 0), 2), **_info_for("劳动保护费")),
+        BudgetRollupItem(level=3, code="⒆", name="其他直接费", amount=round(rd_total + other_total, 2), **_info_for("其他直接费"), children=[
+            BudgetRollupItem(level=4, code="①", name="研发费用", amount=round(rd_total, 2), **_info_for("研发费用", is_level4=True)),
+            BudgetRollupItem(level=4, code="②", name="其他费用", amount=round(other_total, 2), **_info_for("其他费用", is_level4=True)),
         ]),
     ]
     dc_total = sum(c.amount for c in dc_children)

@@ -241,6 +241,8 @@ class BudgetRollupItem(BaseModel):
     name: str  # 科目名称
     amount: float  # 金额
     remark: str | None = None  # 备注
+    code_desc: str = ""  # 科目代码
+    includes: str = ""  # 包括事项
     tax_rate: float = 0
     deductible_tax: float = 0
     children: list["BudgetRollupItem"] = []
