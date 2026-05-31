@@ -109,7 +109,12 @@
             <el-col :xs="12" :sm="4"><div class="stat-card" :class="{ 'profit-positive': (rollup?.mao_li_run || 0) > 0, 'profit-negative': (rollup?.mao_li_run || 0) < 0 }"><div class="stat-label">毛利润</div><div class="stat-val">¥{{ (rollup?.mao_li_run || 0).toLocaleString() }}</div></div></el-col>
           </el-row>
           <el-table :data="flatRollup" border size="small">
-            <el-table-column label="科目" min-width="280">
+            <el-table-column label="编号" width="80" align="center">
+              <template #default="{row}">
+                <span :style="{ fontWeight: row._level <= 1 ? 'bold' : 'normal' }">{{ row.code }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="科目" min-width="240">
               <template #default="{row}">
                 <span :style="{ paddingLeft: (row._level * 24) + 'px', fontWeight: row._level <= 1 ? 'bold' : 'normal' }">{{ row.name }}</span>
               </template>
