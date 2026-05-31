@@ -108,16 +108,20 @@
             <el-col :xs="12" :sm="4"><div class="stat-card"><div class="stat-label">工程成本</div><div class="stat-val">¥{{ (rollup?.gong_cheng_cb || 0).toLocaleString() }}</div></div></el-col>
             <el-col :xs="12" :sm="4"><div class="stat-card" :class="{ 'profit-positive': (rollup?.mao_li_run || 0) > 0, 'profit-negative': (rollup?.mao_li_run || 0) < 0 }"><div class="stat-label">毛利润</div><div class="stat-val">¥{{ (rollup?.mao_li_run || 0).toLocaleString() }}</div></div></el-col>
           </el-row>
-          <el-table :data="flatRollup" border size="small" row-key="key" default-expand-all>
-            <el-table-column label="科目" min-width="300">
+          <el-table :data="flatRollup" border size="small">
+            <el-table-column label="科目" min-width="320">
               <template #default="{row}">
-                <span :style="{ paddingLeft: (row._level * 20) + 'px' }">{{ row.code }} {{ row.name }}</span>
+                <span :style="{ paddingLeft: (row._level * 24) + 'px', fontWeight: row._level <= 1 ? 'bold' : 'normal' }">{{ row.name }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="金额" width="150" align="right">
-              <template #default="{row}"><b>{{ row.amount?.toLocaleString() }}</b></template>
+            <el-table-column label="金额" width="160" align="right">
+              <template #default="{row}">
+                <span :style="{ fontWeight: row._level <= 2 ? 'bold' : 'normal', fontFamily: 'monospace' }">{{ row.amount?.toLocaleString() || 0 }}</span>
+              </template>
             </el-table-column>
-            <el-table-column label="备注" width="100" prop="remark" />
+            <el-table-column label="备注" width="100">
+              <template #default="{row}">{{ row.remark || '' }}</template>
+            </el-table-column>
           </el-table>
         </div>
       </el-tab-pane>
@@ -516,9 +520,10 @@ const flatRollup = ref<any[]>([])
 function flattenRollup(items: any[], level = 0): any[] {
   const result: any[] = []
   for (const item of items) {
-    result.push({ ...item, _level: level, key: item.code + item.name })
-    if (item.children?.length) {
-      result.push(...flattenRollup(item.children, level + 1))
+    const { children, ...rest } = item
+    result.push({ ...rest, _level: level })
+    if (children?.length) {
+      result.push(...flattenRollup(children, level + 1))
     }
   }
   return result
