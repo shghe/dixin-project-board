@@ -727,9 +727,6 @@ async def export_budget_excel(db, project_id: str) -> io.BytesIO:
         ]),
     ]
     for name, amt, children in dc_items:
-        if amt == 0 and name not in ("⑸劳务费", "⑺分包工程款", "⒆其他直接费"):
-            # Skip sub-items with 0 amount, except structural ones
-            continue
         ws3.merge_cells(start_row=r3, start_column=1, end_row=r3, end_column=2)
         ws3.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=4)
         _s3_cell(ws3, r3, 1, name, font=s3_item)
