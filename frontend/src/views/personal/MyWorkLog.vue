@@ -131,8 +131,16 @@ function doHighlight(panel: HTMLElement) {
   const y = parseInt(matched[1]), mo = parseInt(matched[2])
   const prefix = `${y}-${String(mo).padStart(2, '0')}-`
 
-  // 找到所有 td 元素，只处理包含合法日期数字(1-31)的单元格
-  const tds = panel.querySelectorAll('td')
+  // 找到所有当前月份的日期单元格
+  // 优先用 td.available（Element Plus 标准类名），fallback 到排除 prev/next-month 的 td
+  let tds = panel.querySelectorAll('td.available')
+  if (tds.length === 0) {
+    tds = panel.querySelectorAll('td:not(.prev-month):not(.next-month)')
+  }
+  if (tds.length < 5) {
+    // 最后兜底：所有 td
+    tds = panel.querySelectorAll('td')
+  }
   tds.forEach(td => {
     td.classList.remove('work-day')
     // 获取 td 内的纯数字文本（1-31）
