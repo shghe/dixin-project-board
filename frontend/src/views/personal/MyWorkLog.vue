@@ -114,6 +114,7 @@ function fmtDate(d: string | Date): string {
 
 // ====== 全局 MutationObserver：自动高亮任何日期选择器面板 ======
 let _bodyObserver: MutationObserver | null = null
+const _panelObservers: MutationObserver[] = []  // 保存所有面板 observer 引用
 let _panelTimers: ReturnType<typeof setTimeout>[] = []
 
 function findAndHighlightPanel() {
@@ -175,6 +176,7 @@ function tryHighlightAll() {
       _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 80))
     })
     obs.observe(panel, { childList: true, subtree: true, characterData: true })
+    _panelObservers.push(obs)  // 保存引用以便清理
   })
 }
 
@@ -270,7 +272,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   _bodyObserver?.disconnect()
+  _bodyObserver = null
+  // 断开所有面板 observer
+  _panelObservers.forEach(obs => obs.disconnect())
+  _panelObservers.length = 0
+  // 清理所有定时器
   _panelTimers.forEach(clearTimeout)
+  _panelTimers.length = 0
 })
 </script>
 

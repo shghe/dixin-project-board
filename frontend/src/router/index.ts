@@ -20,9 +20,35 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
+// 标记是否已验证过 token
+let tokenVerified = false
+
+router.beforeEach(async (to, _from, next) => {
+  // 公开页面直接放行
   if (to.meta.public) { next(); return }
-  if (!useAuthStore().token) { next('/login'); return }
+
+  const authStore = useAuthStore()
+
+  // 无 token 直接跳转登录
+  if (!authStore.token) {
+    tokenVerified = false
+    next('/login')
+    return
+  }
+
+  // 首次访问或刷新页面时验证 token 有效性
+  if (!tokenVerified && !authStore.user) {
+    try {
+      await authStore.fetchUser()
+      tokenVerified = true
+    } catch {
+      // token 无效，跳转登录
+      tokenVerified = false
+      next('/login')
+      return
+    }
+  }
+
   next()
 })
 
