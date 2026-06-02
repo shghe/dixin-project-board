@@ -14,6 +14,9 @@
           @change="onDateChange"
           style="width:100%"
         />
+        <div class="month-days" v-if="currentMonthWorkDays.length">
+          {{ currentMonthWorkDays.map(d => d + '日').join(' ') }}
+        </div>
       </el-col>
       <el-col :xs="24" :sm="6">
         <span class="summary-text">
@@ -89,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { personalWorkApi } from '@/api/personalWork'
 import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
@@ -113,11 +116,23 @@ function fmtDate(d: string | Date): string {
 }
 
 // 日期选择器内日历高亮：有工时的日期添加 work-day 样式
-function cellClassName(cell: { type: string; date: Date; isSelected: boolean }): string {
-  if (cell.type !== 'current-month') return ''
+function cellClassName(cell: { date: Date }): string {
   const ds = fmtDate(cell.date)
   return workDateSet.value.has(ds) ? 'work-day' : ''
 }
+
+// 当月已记录日期列表（文字兜底）
+const currentMonthWorkDays = computed(() => {
+  const d = new Date(selectedDate.value + 'T00:00:00')
+  const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-`
+  const days: number[] = []
+  for (const ds of workDateSet.value) {
+    if (ds.startsWith(prefix)) {
+      days.push(parseInt(ds.slice(8)))
+    }
+  }
+  return days.sort((a, b) => a - b)
+})
 
 async function loadData() {
   const ds = fmtDate(selectedDate.value)
@@ -189,6 +204,7 @@ onMounted(() => {
 h2 { font-size: 20px; }
 .summary-text { font-size: 16px; color: #606266; }
 .summary-text b { font-weight: 700; }
+.month-days { font-size: 11px; color: #67c23a; margin-top: 4px; line-height: 1.4; word-break: break-all; }
 .card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .card-sum { font-size: 20px; font-weight: 700; color: #409eff; }
 .card-sum.green { color: #67c23a; }
@@ -203,14 +219,14 @@ h2 { font-size: 20px; }
 
 <style>
 /* 日期选择器日历：有工时记录的日期高亮 */
-.el-date-table td.work-day > .el-date-table-cell > .el-date-table-cell__text {
+td.work-day .el-date-table-cell__text {
   color: #67c23a !important;
   font-weight: 700 !important;
 }
-.el-date-table td.work-day > .el-date-table-cell {
+td.work-day .el-date-table-cell {
   position: relative;
 }
-.el-date-table td.work-day > .el-date-table-cell::after {
+td.work-day .el-date-table-cell::after {
   content: '';
   position: absolute;
   bottom: 2px;
@@ -221,8 +237,7 @@ h2 { font-size: 20px; }
   border-radius: 50%;
   background: #67c23a;
 }
-/* 当天且有工时的圆点改为白色 */
-.el-date-table td.work-day.today > .el-date-table-cell::after {
+td.work-day.today .el-date-table-cell::after {
   background: #fff;
 }
 </style>
