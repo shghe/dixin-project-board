@@ -6,17 +6,16 @@
     <el-row :gutter="16" style="margin-top:12px" align="middle">
       <el-col :xs="24" :sm="6">
         <el-date-picker
+          ref="pickerRef"
           v-model="selectedDate"
           type="date"
           placeholder="选择日期"
           value-format="YYYY-MM-DD"
-          :cell-class-name="cellClassName"
+          popper-class="work-calendar-panel"
           @change="onDateChange"
+          @visible-change="onVisibleChange"
           style="width:100%"
         />
-        <div class="month-days" v-if="currentMonthWorkDays.length">
-          {{ currentMonthWorkDays.map(d => d + '日').join(' ') }}
-        </div>
       </el-col>
       <el-col :xs="24" :sm="6">
         <span class="summary-text">
@@ -92,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { personalWorkApi } from '@/api/personalWork'
 import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
@@ -115,24 +114,65 @@ function fmtDate(d: string | Date): string {
   return d
 }
 
-// 日期选择器内日历高亮：有工时的日期添加 work-day 样式
-function cellClassName(cell: { date: Date }): string {
-  const ds = fmtDate(cell.date)
-  return workDateSet.value.has(ds) ? 'work-day' : ''
+// ====== 日历日期高亮：通过 DOM 注入实现 ======
+let _highlightTimer: ReturnType<typeof setTimeout> | null = null
+let _panelObserver: MutationObserver | null = null
+
+function highlightCells(retry = 0) {
+  const panel = document.querySelector('.work-calendar-panel')
+  if (!panel) {
+    if (retry < 10) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 150)
+    return
+  }
+  // 获取当前面板显示的月份
+  const yearInput = panel.querySelector('input[aria-label="year"], .el-date-picker__header-label') as HTMLElement | null
+  if (!yearInput) {
+    if (retry < 10) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 100)
+    return
+  }
+  // 从面板头部提取年月 - Element Plus 2.9 头部包含年份和月份文本
+  const headerEl = panel.querySelector('.el-date-picker__header-label')
+  const headerText = headerEl?.textContent || panel.textContent?.match(/(\d{4})[^\d]*(\d{1,2})/)?.input || ''
+  const m = headerText.match(/(\d{4}).*?(\d{1,2})/)
+  if (!m) {
+    if (retry < 5) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 100)
+    return
+  }
+  const y = parseInt(m[1]), mo = parseInt(m[2])
+  const prefix = `${y}-${String(mo).padStart(2, '0')}-`
+
+  // 找到所有日期单元格（td.available）
+  const allTds = panel.querySelectorAll('td.available')
+  allTds.forEach(td => {
+    td.classList.remove('work-day')
+    const span = td.querySelector('.el-date-table-cell__text') || td.querySelector('span')
+    if (!span) return
+    const day = parseInt(span.textContent || '')
+    if (!day) return
+    const ds = prefix + String(day).padStart(2, '0')
+    if (workDateSet.value.has(ds)) {
+      td.classList.add('work-day')
+    }
+  })
+
+  // 监听月份切换按钮
+  const prevBtn = panel.querySelector('.el-date-picker__prev-btn') as HTMLElement | null
+  const nextBtn = panel.querySelector('.el-date-picker__next-btn') as HTMLElement | null
+  if (prevBtn) { prevBtn.onclick = () => { setTimeout(() => highlightCells(), 120) } }
+  if (nextBtn) { nextBtn.onclick = () => { setTimeout(() => highlightCells(), 120) } }
 }
 
-// 当月已记录日期列表（文字兜底）
-const currentMonthWorkDays = computed(() => {
-  const d = new Date(selectedDate.value + 'T00:00:00')
-  const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-`
-  const days: number[] = []
-  for (const ds of workDateSet.value) {
-    if (ds.startsWith(prefix)) {
-      days.push(parseInt(ds.slice(8)))
-    }
+function onVisibleChange(visible: boolean) {
+  if (visible) {
+    // 确保数据已加载，然后高亮
+    loadWorkDates().then(() => {
+      _highlightTimer = setTimeout(() => highlightCells(), 200)
+      _highlightTimer = setTimeout(() => highlightCells(), 500)
+    })
+  } else {
+    if (_highlightTimer) clearTimeout(_highlightTimer)
   }
-  return days.sort((a, b) => a - b)
-})
+}
 
 async function loadData() {
   const ds = fmtDate(selectedDate.value)
@@ -204,7 +244,6 @@ onMounted(() => {
 h2 { font-size: 20px; }
 .summary-text { font-size: 16px; color: #606266; }
 .summary-text b { font-weight: 700; }
-.month-days { font-size: 11px; color: #67c23a; margin-top: 4px; line-height: 1.4; word-break: break-all; }
 .card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .card-sum { font-size: 20px; font-weight: 700; color: #409eff; }
 .card-sum.green { color: #67c23a; }
