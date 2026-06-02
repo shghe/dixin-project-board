@@ -2,16 +2,52 @@
   <div class="page">
     <h2>我的工时</h2>
 
-    <!-- 日期选择 -->
-    <el-row :gutter="16" style="margin-top:12px" align="middle">
-      <el-col :xs="12" :sm="4">
-        <el-date-picker v-model="selectedDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" @change="loadData" style="width:100%" />
+    <el-row :gutter="16" style="margin-top:12px">
+      <!-- 日历 -->
+      <el-col :xs="24" :md="9">
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <el-button size="small" text @click="prevMonth"><el-icon><ArrowLeft /></el-icon></el-button>
+            <span class="calendar-month">{{ calendarYear }}年{{ calendarMonth }}月</span>
+            <el-button size="small" text @click="nextMonth"><el-icon><ArrowRight /></el-icon></el-button>
+          </div>
+          <div class="calendar-grid">
+            <div class="cal-day-header" v-for="d in weekDays" :key="d">{{ d }}</div>
+            <div
+              v-for="(day, idx) in calendarDays"
+              :key="idx"
+              class="cal-day"
+              :class="{
+                'cal-day-empty': !day,
+                'cal-day-today': day && day.dateStr === todayStr,
+                'cal-day-selected': day && day.dateStr === selectedDate,
+                'cal-day-has-work': day && day.hasWork,
+              }"
+              @click="day && selectDay(day.dateStr)"
+            >
+              <template v-if="day">
+                <span class="cal-day-num">{{ day.day }}</span>
+                <span class="cal-day-hours" v-if="day.hasWork">{{ day.total }}h</span>
+              </template>
+            </div>
+          </div>
+        </div>
       </el-col>
-      <el-col :xs="12" :sm="8">
-        <span class="summary-text">
-          合计 <b :style="{color: summary.total_hours>=8?'#67c23a':'#e6a23c'}">{{ summary.total_hours }}h</b>
-          &nbsp;剩余 <b :style="{color: summary.remaining>0?'#f56c6c':'#67c23a'}">{{ summary.remaining }}h</b>
-        </span>
+
+      <!-- 右侧：日期选择 + 汇总 + 工时卡片 -->
+      <el-col :xs="24" :md="15">
+        <el-row :gutter="16" align="middle">
+          <el-col :xs="12" :sm="6">
+            <el-date-picker v-model="selectedDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" @change="loadData" style="width:100%" />
+          </el-col>
+          <el-col :xs="12" :sm="8">
+            <span class="summary-text">
+              合计 <b :style="{color: summary.total_hours>=8?'#67c23a':'#e6a23c'}">{{ summary.total_hours }}h</b>
+              &nbsp;剩余 <b :style="{color: summary.remaining>0?'#f56c6c':'#67c23a'}">{{ summary.remaining }}h</b>
+            </span>
+          </el-col>
+        </el-row>
+
       </el-col>
     </el-row>
 
@@ -81,12 +117,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { personalWorkApi } from '@/api/personalWork'
 import type { PersonalWorkEntryItem, DailySummary, ProjectDetail } from '@/api/personalWork'
 
-const selectedDate = ref(new Date().toISOString().slice(0, 10))
+const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+const todayStr = new Date().toISOString().slice(0, 10)
+const selectedDate = ref(todayStr)
+
+// 日历状态
+const calendarYear = ref(new Date().getFullYear())
+const calendarMonth = ref(new Date().getMonth() + 1)
+const workDates = ref<Record<string, { project_hours: number; personal_hours: number; total_hours: number }>>({})
+
+function prevMonth() {
+  if (calendarMonth.value === 1) { calendarMonth.value = 12; calendarYear.value-- }
+  else calendarMonth.value--
+  loadCalendar()
+}
+function nextMonth() {
+  if (calendarMonth.value === 12) { calendarMonth.value = 1; calendarYear.value++ }
+  else calendarMonth.value++
+  loadCalendar()
+}
+
+async function loadCalendar() {
+  try {
+    const res = await personalWorkApi.monthlyCalendar(calendarYear.value, calendarMonth.value)
+    const map: Record<string, any> = {}
+    for (const d of res.dates) map[d.date] = d
+    workDates.value = map
+  } catch { workDates.value = {} }
+}
+
+function selectDay(dateStr: string) {
+  selectedDate.value = dateStr
+  loadData()
+}
+
+interface CalendarDay { day: number; dateStr: string; hasWork: boolean; total: number }
+
+const calendarDays = computed(() => {
+  const y = calendarYear.value, m = calendarMonth.value
+  const firstDay = new Date(y, m - 1, 1).getDay() // 0=Sun
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const days: (CalendarDay | null)[] = []
+  for (let i = 0; i < firstDay; i++) days.push(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    const wd = workDates.value[ds]
+    days.push({ day: d, dateStr: ds, hasWork: !!wd, total: wd?.total_hours || 0 })
+  }
+  return days
+})
+
+// 切换月份时重新加载日历
+watch(() => selectedDate.value, (val) => {
+  const d = new Date(val)
+  calendarYear.value = d.getFullYear()
+  calendarMonth.value = d.getMonth() + 1
+  loadCalendar()
+})
+
 const summary = ref<DailySummary>({
   record_date: '', project_hours: 0, project_breakdown: [], project_details: [],
   personal_hours: 0, total_hours: 0, remaining: 8, entries: [],
@@ -141,12 +235,35 @@ async function handleDelete(id: string) {
   loadData()
 }
 
-onMounted(loadData)
+onMounted(() => { loadCalendar(); loadData() })
 </script>
 
 <style scoped>
 h2 { font-size: 20px; }
 .summary-text { font-size: 16px; color: #606266; }
+
+/* 日历 */
+.calendar-card { border: 1px solid #e4e7ed; border-radius: 8px; padding: 12px; background: #fff; }
+.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.calendar-month { font-size: 16px; font-weight: 600; color: #303133; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.cal-day-header { font-size: 12px; color: #909399; padding: 4px 0; font-weight: 500; }
+.cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; font-size: 13px; color: #303133; position: relative; min-height: 36px; }
+.cal-day:hover { background: #f0f5ff; }
+.cal-day-empty { cursor: default; }
+.cal-day-empty:hover { background: transparent; }
+.cal-day-today { background: #ecf5ff; }
+.cal-day-selected { background: #409eff; color: #fff; }
+.cal-day-selected .cal-day-hours { color: #fff; }
+.cal-day-has-work { font-weight: 700; }
+.cal-day-has-work::after { content: ''; position: absolute; bottom: 2px; width: 5px; height: 5px; border-radius: 50%; background: #67c23a; }
+.cal-day-selected.cal-day-has-work::after { background: #fff; }
+.cal-day-num { line-height: 1; }
+.cal-day-hours { font-size: 10px; color: #67c23a; line-height: 1; margin-top: 1px; }
+@media (max-width: 767px) {
+  .calendar-card { margin-bottom: 12px; }
+}
+
 .summary-text b { font-weight: 700; }
 .card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .card-sum { font-size: 20px; font-weight: 700; color: #409eff; }

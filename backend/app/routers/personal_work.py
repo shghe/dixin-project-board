@@ -209,3 +209,62 @@ async def daily_summary(
             for e in entries
         ],
     }
+
+
+@router.get("/monthly-calendar")
+async def monthly_calendar(
+    year: int = Query(...),
+    month: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """返回某月每天是否有工时记录及工时汇总"""
+    employee_id = current_user.employee_id
+    if not employee_id:
+        raise HTTPException(status_code=400, detail="当前用户未关联员工")
+
+    # 项目工时（按日汇总）
+    proj_result = await db.execute(
+        select(
+            DailyExecution.record_date,
+            func.sum(ExecutionDetail.work_hours),
+        )
+        .join(DailyExecution, ExecutionDetail.execution_id == DailyExecution.id)
+        .where(
+            ExecutionDetail.employee_id == employee_id,
+            func.strftime("%Y", DailyExecution.record_date) == str(year),
+            func.strftime("%m", DailyExecution.record_date) == f"{month:02d}",
+        )
+        .group_by(DailyExecution.record_date)
+    )
+    proj_hours = {row[0]: float(row[1] or 0) for row in proj_result.all()}
+
+    # 个人工时（按日汇总）
+    pers_result = await db.execute(
+        select(
+            PersonalWorkEntry.record_date,
+            func.sum(PersonalWorkEntry.work_hours),
+        )
+        .where(
+            PersonalWorkEntry.employee_id == employee_id,
+            func.strftime("%Y", PersonalWorkEntry.record_date) == str(year),
+            func.strftime("%m", PersonalWorkEntry.record_date) == f"{month:02d}",
+        )
+        .group_by(PersonalWorkEntry.record_date)
+    )
+    pers_hours = {row[0]: float(row[1] or 0) for row in pers_result.all()}
+
+    # 合并
+    all_dates = set(proj_hours.keys()) | set(pers_hours.keys())
+    dates = []
+    for d in sorted(all_dates):
+        ph = proj_hours.get(d, 0)
+        eh = pers_hours.get(d, 0)
+        dates.append({
+            "date": d,
+            "project_hours": round(ph, 1),
+            "personal_hours": round(eh, 1),
+            "total_hours": round(ph + eh, 1),
+        })
+
+    return {"year": year, "month": month, "dates": dates}
