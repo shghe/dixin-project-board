@@ -6,12 +6,10 @@
     <el-row :gutter="16" style="margin-top:12px" align="middle">
       <el-col :xs="24" :sm="6">
         <el-date-picker
-          ref="pickerRef"
           v-model="selectedDate"
           type="date"
           placeholder="选择日期"
           value-format="YYYY-MM-DD"
-          popper-class="work-calendar-panel"
           @change="onDateChange"
           @visible-change="onVisibleChange"
           style="width:100%"
@@ -91,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { personalWorkApi } from '@/api/personalWork'
 import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
@@ -114,40 +112,38 @@ function fmtDate(d: string | Date): string {
   return d
 }
 
-// ====== 日历日期高亮：通过 DOM 注入实现 ======
-let _highlightTimer: ReturnType<typeof setTimeout> | null = null
-let _panelObserver: MutationObserver | null = null
+// ====== 全局 MutationObserver：自动高亮任何日期选择器面板 ======
+let _bodyObserver: MutationObserver | null = null
+let _panelTimers: ReturnType<typeof setTimeout>[] = []
 
-function highlightCells(retry = 0) {
-  const panel = document.querySelector('.work-calendar-panel')
-  if (!panel) {
-    if (retry < 10) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 150)
-    return
-  }
-  // 获取当前面板显示的月份
-  const yearInput = panel.querySelector('input[aria-label="year"], .el-date-picker__header-label') as HTMLElement | null
-  if (!yearInput) {
-    if (retry < 10) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 100)
-    return
-  }
-  // 从面板头部提取年月 - Element Plus 2.9 头部包含年份和月份文本
-  const headerEl = panel.querySelector('.el-date-picker__header-label')
-  const headerText = headerEl?.textContent || panel.textContent?.match(/(\d{4})[^\d]*(\d{1,2})/)?.input || ''
+function findAndHighlightPanel() {
+  // 查找页面上所有的日期选择器面板（未高亮过的）
+  const panels = document.querySelectorAll('.el-picker-panel:not(.work-highlighted)')
+  panels.forEach(panel => {
+    panel.classList.add('work-highlighted')
+    // 延迟高亮（等面板渲染完）
+    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 50))
+    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 200))
+    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 500))
+  })
+}
+
+function doHighlight(panel: HTMLElement) {
+  // 获取年月
+  const headerLabel = panel.querySelector('.el-date-picker__header-label')
+  const headerText = headerLabel?.textContent || ''
   const m = headerText.match(/(\d{4}).*?(\d{1,2})/)
-  if (!m) {
-    if (retry < 5) _highlightTimer = setTimeout(() => highlightCells(retry + 1), 100)
-    return
-  }
+  if (!m) return
   const y = parseInt(m[1]), mo = parseInt(m[2])
   const prefix = `${y}-${String(mo).padStart(2, '0')}-`
 
-  // 找到所有日期单元格（td.available）
-  const allTds = panel.querySelectorAll('td.available')
-  allTds.forEach(td => {
+  // 找到所有 td.available 单元格
+  const tds = panel.querySelectorAll('td.available:not(.el-date-table-cell--hidden)')
+  tds.forEach(td => {
     td.classList.remove('work-day')
-    const span = td.querySelector('.el-date-table-cell__text') || td.querySelector('span')
-    if (!span) return
-    const day = parseInt(span.textContent || '')
+    const textEl = td.querySelector('.el-date-table-cell__text')
+    if (!textEl) return
+    const day = parseInt(textEl.textContent || '')
     if (!day) return
     const ds = prefix + String(day).padStart(2, '0')
     if (workDateSet.value.has(ds)) {
@@ -156,21 +152,32 @@ function highlightCells(retry = 0) {
   })
 
   // 监听月份切换按钮
-  const prevBtn = panel.querySelector('.el-date-picker__prev-btn') as HTMLElement | null
-  const nextBtn = panel.querySelector('.el-date-picker__next-btn') as HTMLElement | null
-  if (prevBtn) { prevBtn.onclick = () => { setTimeout(() => highlightCells(), 120) } }
-  if (nextBtn) { nextBtn.onclick = () => { setTimeout(() => highlightCells(), 120) } }
+  const prevBtn = panel.querySelector('.el-date-picker__prev-btn')
+  const nextBtn = panel.querySelector('.el-date-picker__next-btn')
+  const monthBtn = panel.querySelector('.el-date-picker__header-label')
+  if (prevBtn) {
+    (prevBtn as HTMLElement).addEventListener('click', () => {
+      _panelTimers.push(setTimeout(() => doHighlight(panel), 150))
+    }, { once: false })
+  }
+  if (nextBtn) {
+    (nextBtn as HTMLElement).addEventListener('click', () => {
+      _panelTimers.push(setTimeout(() => doHighlight(panel), 150))
+    }, { once: false })
+  }
+  if (monthBtn) {
+    (monthBtn as HTMLElement).addEventListener('click', () => {
+      _panelTimers.push(setTimeout(() => doHighlight(panel), 300))
+    }, { once: false })
+  }
 }
 
 function onVisibleChange(visible: boolean) {
   if (visible) {
-    // 确保数据已加载，然后高亮
     loadWorkDates().then(() => {
-      _highlightTimer = setTimeout(() => highlightCells(), 200)
-      _highlightTimer = setTimeout(() => highlightCells(), 500)
+      _panelTimers.push(setTimeout(findAndHighlightPanel, 100))
+      _panelTimers.push(setTimeout(findAndHighlightPanel, 300))
     })
-  } else {
-    if (_highlightTimer) clearTimeout(_highlightTimer)
   }
 }
 
@@ -200,6 +207,7 @@ async function loadWorkDates() {
     } catch { /* skip */ }
   }
   workDateSet.value = set
+  return set
 }
 
 function openDialog(row?: PersonalWorkEntryItem) {
@@ -237,6 +245,26 @@ async function handleDelete(id: string) {
 onMounted(() => {
   loadData()
   loadWorkDates()
+  // 全局监听：检测任意日期选择器面板出现在 DOM 中
+  _bodyObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node instanceof HTMLElement) {
+          if (node.classList.contains('el-picker-panel') || node.querySelector('.el-picker-panel')) {
+            _panelTimers.push(setTimeout(findAndHighlightPanel, 100))
+          }
+        }
+      }
+    }
+    // 兜底扫描
+    _panelTimers.push(setTimeout(findAndHighlightPanel, 200))
+  })
+  _bodyObserver.observe(document.body, { childList: true, subtree: true })
+})
+
+onUnmounted(() => {
+  _bodyObserver?.disconnect()
+  _panelTimers.forEach(clearTimeout)
 })
 </script>
 
@@ -257,26 +285,26 @@ h2 { font-size: 20px; }
 </style>
 
 <style>
-/* 日期选择器日历：有工时记录的日期高亮 */
-td.work-day .el-date-table-cell__text {
+/* 日期选择器日历：有工时记录的日期高亮（全局样式，面板 teleported 到 body） */
+.el-picker-panel td.work-day .el-date-table-cell__text {
   color: #67c23a !important;
   font-weight: 700 !important;
 }
-td.work-day .el-date-table-cell {
-  position: relative;
+.el-picker-panel td.work-day .el-date-table-cell {
+  position: relative !important;
 }
-td.work-day .el-date-table-cell::after {
+.el-picker-panel td.work-day .el-date-table-cell::after {
   content: '';
   position: absolute;
   bottom: 2px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
+  margin-left: -2px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #67c23a;
 }
-td.work-day.today .el-date-table-cell::after {
+.el-picker-panel td.work-day.today .el-date-table-cell::after {
   background: #fff;
 }
 </style>
