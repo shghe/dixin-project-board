@@ -117,59 +117,57 @@ let _bodyObserver: MutationObserver | null = null
 let _panelTimers: ReturnType<typeof setTimeout>[] = []
 
 function findAndHighlightPanel() {
-  // 查找页面上所有的日期选择器面板（未高亮过的）
-  const panels = document.querySelectorAll('.el-picker-panel:not(.work-highlighted)')
-  panels.forEach(panel => {
-    panel.classList.add('work-highlighted')
-    // 延迟高亮（等面板渲染完）
-    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 50))
-    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 200))
-    _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 500))
-  })
+  tryHighlightAll()
 }
 
 function doHighlight(panel: HTMLElement) {
-  // 获取年月
-  const headerLabel = panel.querySelector('.el-date-picker__header-label')
-  const headerText = headerLabel?.textContent || ''
-  const m = headerText.match(/(\d{4}).*?(\d{1,2})/)
-  if (!m) return
-  const y = parseInt(m[1]), mo = parseInt(m[2])
+  // 从面板文本中提取年份和月份（匹配"2026年6月"等格式）
+  const text = panel.textContent || ''
+  const m = text.match(/(\d{4})\s*年\s*(\d{1,2})\s*月/)
+  // 或者匹配 month table 中的表头
+  const m2 = text.match(/(\d{4})\s*[年/\-]\s*(\d{1,2})/)
+  const matched = m || m2
+  if (!matched) return
+  const y = parseInt(matched[1]), mo = parseInt(matched[2])
   const prefix = `${y}-${String(mo).padStart(2, '0')}-`
 
-  // 找到所有 td.available 单元格
-  const tds = panel.querySelectorAll('td.available:not(.el-date-table-cell--hidden)')
+  // 找到所有 td 元素，只处理包含合法日期数字(1-31)的单元格
+  const tds = panel.querySelectorAll('td')
   tds.forEach(td => {
     td.classList.remove('work-day')
-    const textEl = td.querySelector('.el-date-table-cell__text')
-    if (!textEl) return
-    const day = parseInt(textEl.textContent || '')
-    if (!day) return
+    // 获取 td 内的纯数字文本（1-31）
+    const numText = td.textContent?.trim() || ''
+    const day = parseInt(numText)
+    if (day < 1 || day > 31 || numText.length > 2) return
+    // 确保不是年份或其他数字（额外检查：文本只能是1-2位数字）
+    if (!/^\d{1,2}$/.test(numText)) return
+
     const ds = prefix + String(day).padStart(2, '0')
     if (workDateSet.value.has(ds)) {
       td.classList.add('work-day')
     }
   })
+}
 
-  // 监听月份切换按钮
-  const prevBtn = panel.querySelector('.el-date-picker__prev-btn')
-  const nextBtn = panel.querySelector('.el-date-picker__next-btn')
-  const monthBtn = panel.querySelector('.el-date-picker__header-label')
-  if (prevBtn) {
-    (prevBtn as HTMLElement).addEventListener('click', () => {
-      _panelTimers.push(setTimeout(() => doHighlight(panel), 150))
-    }, { once: false })
-  }
-  if (nextBtn) {
-    (nextBtn as HTMLElement).addEventListener('click', () => {
-      _panelTimers.push(setTimeout(() => doHighlight(panel), 150))
-    }, { once: false })
-  }
-  if (monthBtn) {
-    (monthBtn as HTMLElement).addEventListener('click', () => {
-      _panelTimers.push(setTimeout(() => doHighlight(panel), 300))
-    }, { once: false })
-  }
+// 记录已处理的 panel
+const _seenPanels = new WeakSet()
+
+function tryHighlightAll() {
+  document.querySelectorAll('.el-picker-panel').forEach(panel => {
+    if (_seenPanels.has(panel)) return  // 跳过已处理的
+    // 检查 panel 是否已渲染完毕
+    const tds = panel.querySelectorAll('td')
+    if (tds.length < 28) return  // 还没渲染完
+    _seenPanels.add(panel as Element)
+
+    doHighlight(panel as HTMLElement)
+
+    // 监听内部变化（月份切换）
+    const obs = new MutationObserver(() => {
+      _panelTimers.push(setTimeout(() => doHighlight(panel as HTMLElement), 80))
+    })
+    obs.observe(panel, { childList: true, subtree: true, characterData: true })
+  })
 }
 
 function onVisibleChange(visible: boolean) {
@@ -285,15 +283,13 @@ h2 { font-size: 20px; }
 </style>
 
 <style>
-/* 日期选择器日历：有工时记录的日期高亮（全局样式，面板 teleported 到 body） */
-.el-picker-panel td.work-day .el-date-table-cell__text {
+/* 日期选择器日历：有工时记录的日期高亮（面板在 body 下） */
+.el-picker-panel td.work-day {
   color: #67c23a !important;
   font-weight: 700 !important;
+  position: relative;
 }
-.el-picker-panel td.work-day .el-date-table-cell {
-  position: relative !important;
-}
-.el-picker-panel td.work-day .el-date-table-cell::after {
+.el-picker-panel td.work-day::after {
   content: '';
   position: absolute;
   bottom: 2px;
@@ -303,8 +299,5 @@ h2 { font-size: 20px; }
   height: 4px;
   border-radius: 50%;
   background: #67c23a;
-}
-.el-picker-panel td.work-day.today .el-date-table-cell::after {
-  background: #fff;
 }
 </style>
