@@ -4,18 +4,18 @@
 
     <!-- 日期选择 -->
     <el-row :gutter="16" style="margin-top:12px" align="middle">
-      <el-col :xs="12" :sm="4">
+      <el-col :xs="24" :sm="6">
         <el-date-picker
           v-model="selectedDate"
           type="date"
           placeholder="选择日期"
           value-format="YYYY-MM-DD"
-          @change="loadData"
-          @visible-change="onPickerVisible"
+          :cell-class-name="cellClassName"
+          @change="onDateChange"
           style="width:100%"
         />
       </el-col>
-      <el-col :xs="12" :sm="8">
+      <el-col :xs="24" :sm="6">
         <span class="summary-text">
           合计 <b :style="{color: summary.total_hours>=8?'#67c23a':'#e6a23c'}">{{ summary.total_hours }}h</b>
           &nbsp;剩余 <b :style="{color: summary.remaining>0?'#f56c6c':'#67c23a'}">{{ summary.remaining }}h</b>
@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { personalWorkApi } from '@/api/personalWork'
 import type { PersonalWorkEntryItem, DailySummary } from '@/api/personalWork'
@@ -104,12 +104,19 @@ const dialogVisible = ref(false)
 const editingId = ref('')
 const form = ref({ category: '院务工作', work_hours: 0, work_content: '' })
 
-// 有工时记录的日期集合（key: "YYYY-MM" → Set of day numbers）
-const workDayMap = ref<Map<string, Set<number>>>(new Map())
+// 有工时记录的日期集合（存储为 ISO 日期字符串）
+const workDateSet = ref(new Set<string>())
 
 function fmtDate(d: string | Date): string {
   if (d instanceof Date) return d.toISOString().slice(0, 10)
   return d
+}
+
+// 日期选择器内日历高亮：有工时的日期添加 work-day 样式
+function cellClassName(cell: { type: string; date: Date; isSelected: boolean }): string {
+  if (cell.type !== 'current-month') return ''
+  const ds = fmtDate(cell.date)
+  return workDateSet.value.has(ds) ? 'work-day' : ''
 }
 
 async function loadData() {
@@ -122,79 +129,22 @@ async function loadData() {
   entries.value = e
 }
 
-// 加载最近几个月工时记录日期
+function onDateChange() {
+  loadData()
+}
+
+// 加载所有工时记录日期（前后6个月）
 async function loadWorkDates() {
   const now = new Date()
-  const map = new Map<string, Set<number>>()
-  // 加载前3个月到后3个月
-  for (let offset = -3; offset <= 3; offset++) {
+  const set = new Set<string>()
+  for (let offset = -6; offset <= 6; offset++) {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1)
-    const y = d.getFullYear(), m = d.getMonth() + 1
     try {
-      const res = await personalWorkApi.monthlyCalendar(y, m)
-      for (const item of res.dates) {
-        const dd = new Date(item.date + 'T00:00:00')
-        const key = `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}`
-        if (!map.has(key)) map.set(key, new Set())
-        map.get(key)!.add(dd.getDate())
-      }
+      const res = await personalWorkApi.monthlyCalendar(d.getFullYear(), d.getMonth() + 1)
+      for (const item of res.dates) set.add(item.date)
     } catch { /* skip */ }
   }
-  workDayMap.value = map
-  // 如果面板已打开，立即刷新高亮
-  nextTick(() => highlightCalendar())
-}
-
-// DOM 方式高亮日期选择器面板中的日期
-function highlightCalendar() {
-  const panel = document.querySelector('.el-picker-panel__body')
-  if (!panel) return
-  // 找到当前显示的 year/month
-  const monthLabels = panel.querySelectorAll('.el-date-table')
-  // 获取面板头部显示的日期
-  const headerSpan = document.querySelector('.el-date-picker__header-label')
-  if (!headerSpan) return
-  const headerText = headerSpan.textContent || ''
-  const match = headerText.match(/(\d{4})\s*年\s*(\d{1,2})\s*月/)
-  if (!match) return
-  const key = `${match[1]}-${String(parseInt(match[2])).padStart(2, '0')}`
-  const days = workDayMap.value.get(key)
-
-  // 清除旧的高亮
-  panel.querySelectorAll('.work-highlight').forEach(el => el.classList.remove('work-highlight'))
-
-  if (!days || days.size === 0) return
-
-  // 找到所有日期单元格并高亮
-  const cells = panel.querySelectorAll('td.available .el-date-table-cell__text')
-  cells.forEach(el => {
-    const num = parseInt(el.textContent || '')
-    if (days.has(num)) {
-      const td = el.closest('td')
-      if (td) td.classList.add('work-highlight')
-    }
-  })
-}
-
-// 面板可见时加载数据并高亮
-function onPickerVisible(visible: boolean) {
-  if (visible) {
-    loadWorkDates()
-    // 延迟执行 DOM 操作，等面板渲染完成
-    setTimeout(() => highlightCalendar(), 100)
-    // 监听月份切换
-    setTimeout(() => {
-      const prevBtn = document.querySelector('.el-date-picker__header button:first-child')
-      const nextBtn = document.querySelector('.el-date-picker__header button:last-child')
-      const headerEl = document.querySelector('.el-date-picker__header-label')
-      const observer = new MutationObserver(() => {
-        setTimeout(() => highlightCalendar(), 50)
-      })
-      if (headerEl) observer.observe(headerEl, { characterData: true, subtree: true, childList: true })
-      if (prevBtn) prevBtn.addEventListener('click', () => setTimeout(() => highlightCalendar(), 100))
-      if (nextBtn) nextBtn.addEventListener('click', () => setTimeout(() => highlightCalendar(), 100))
-    }, 200)
-  }
+  workDateSet.value = set
 }
 
 function openDialog(row?: PersonalWorkEntryItem) {
@@ -218,6 +168,7 @@ async function handleSave() {
   }
   dialogVisible.value = false
   loadData()
+  loadWorkDates() // 刷新日历高亮数据
 }
 
 async function handleDelete(id: string) {
@@ -225,6 +176,7 @@ async function handleDelete(id: string) {
   await personalWorkApi.delete(id)
   ElMessage.success('已删除')
   loadData()
+  loadWorkDates()
 }
 
 onMounted(() => {
@@ -250,15 +202,15 @@ h2 { font-size: 20px; }
 </style>
 
 <style>
-/* 全局样式：日期选择器中有工时记录的日期高亮 */
-.el-picker-panel td.work-highlight .el-date-table-cell__text {
+/* 日期选择器日历：有工时记录的日期高亮 */
+.el-date-table td.work-day > .el-date-table-cell > .el-date-table-cell__text {
   color: #67c23a !important;
-  font-weight: 700;
+  font-weight: 700 !important;
 }
-.el-picker-panel td.work-highlight .el-date-table-cell {
+.el-date-table td.work-day > .el-date-table-cell {
   position: relative;
 }
-.el-picker-panel td.work-highlight .el-date-table-cell::after {
+.el-date-table td.work-day > .el-date-table-cell::after {
   content: '';
   position: absolute;
   bottom: 2px;
@@ -269,7 +221,8 @@ h2 { font-size: 20px; }
   border-radius: 50%;
   background: #67c23a;
 }
-.el-picker-panel td.work-highlight.current .el-date-table-cell::after {
+/* 当天且有工时的圆点改为白色 */
+.el-date-table td.work-day.today > .el-date-table-cell::after {
   background: #fff;
 }
 </style>
