@@ -135,10 +135,12 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
 # ============================================================
 
 async def get_latest_approval(db: AsyncSession, project_id: str) -> BudgetApproval | None:
-    """获取项目最新的审批记录"""
+    """获取项目最新的审批记录（含关联用户信息）"""
     from sqlalchemy import desc
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
         select(BudgetApproval)
+        .options(selectinload(BudgetApproval.submitter), selectinload(BudgetApproval.reviewer))
         .where(BudgetApproval.project_id == project_id)
         .order_by(desc(BudgetApproval.created_at))
         .limit(1)
@@ -341,11 +343,11 @@ async def reject_budget(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("director")),
 ):
-    """院长/副院长驳回预算审批"""
+    """院长/副院长驳回预算审批（可从 pending 或 approved 状态驳回）"""
     from datetime import datetime
     approval = await get_latest_approval(db, project_id)
-    if not approval or approval.status != "pending":
-        raise HTTPException(status_code=400, detail="当前没有待审批的预算")
+    if not approval or approval.status not in ("pending", "approved"):
+        raise HTTPException(status_code=400, detail="当前没有可驳回的预算")
     approval.status = "rejected"
     approval.reviewed_by = current_user.id
     approval.reviewed_at = datetime.utcnow()
