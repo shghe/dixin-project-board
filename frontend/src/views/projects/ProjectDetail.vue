@@ -229,7 +229,7 @@ const taskForm = ref({
 watch(() => [taskForm.value.start_date, taskForm.value.end_date], ([s, e]) => {
   if (s && e) {
     const diff = Math.ceil((new Date(e).getTime() - new Date(s).getTime()) / 86400000)
-    taskForm.value.duration_days = Math.max(0, diff)
+    taskForm.value.duration_days = Math.max(0, diff + 1)
   }
 })
 

@@ -15,6 +15,8 @@ from app.models.budget_v2 import (
     BudgetEquipment, BudgetDirectCost, BudgetLabor,
     BudgetSubcontract, BudgetRDOther,
 )
+from app.models.budget_approval import BudgetApproval
+from app.identity import normalize_identity
 from sqlalchemy.orm import selectinload
 from app.schemas.budget_v2 import (
     BudgetSummaryCreate, BudgetSummaryResponse,
@@ -54,6 +56,7 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(require_role("director", "manager")),
     ):
+        await check_budget_editable(db, project_id, current_user)
         vals = data.model_dump()
         # 自动计算（匹配 DX20260411测绘预算.xlsx 公式）
         if entity_name == "personnel":
@@ -81,6 +84,7 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(require_role("director", "manager")),
     ):
+        await check_budget_editable(db, project_id, current_user)
         result = await db.execute(
             select(model_class).where(model_class.id == item_id, model_class.project_id == project_id)
         )
@@ -114,6 +118,7 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(require_role("director", "manager")),
     ):
+        await check_budget_editable(db, project_id, current_user)
         result = await db.execute(
             select(model_class).where(model_class.id == item_id, model_class.project_id == project_id)
         )
@@ -123,6 +128,31 @@ def make_crud(entity_name: str, model_class, create_schema, response_schema):
         return {"message": "删除成功"}
 
     return list_items, create_item, update_item, delete_item
+
+
+# ============================================================
+# 审批状态辅助函数
+# ============================================================
+
+async def get_latest_approval(db: AsyncSession, project_id: str) -> BudgetApproval | None:
+    """获取项目最新的审批记录"""
+    from sqlalchemy import desc
+    result = await db.execute(
+        select(BudgetApproval)
+        .where(BudgetApproval.project_id == project_id)
+        .order_by(desc(BudgetApproval.created_at))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def check_budget_editable(db: AsyncSession, project_id: str, current_user: User) -> None:
+    """检查预算是否可编辑（项目经理在 pending/approved 状态下不可编辑）"""
+    if normalize_identity(current_user.role) in ("院长", "副院长"):
+        return
+    approval = await get_latest_approval(db, project_id)
+    if approval and approval.status in ("pending", "approved"):
+        raise HTTPException(status_code=403, detail="预算已提交审批或已通过，不可修改")
 
 
 # 为每个子表生成 CRUD
@@ -204,6 +234,7 @@ async def save_budget_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("director", "manager")),
 ):
+    await check_budget_editable(db, project_id, current_user)
     proj_result = await db.execute(
         select(Project).options(selectinload(Project.manager)).where(Project.id == project_id)
     )
@@ -225,6 +256,102 @@ async def save_budget_summary(
         db.add(item)
     await db.commit(); await db.refresh(item)
     return item
+
+
+# ============================================================
+# 预算审批
+# ============================================================
+
+@router.get("/{project_id}/budget/approval")
+async def get_budget_approval(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前预算审批状态"""
+    from sqlalchemy.orm import selectinload
+    approval = await get_latest_approval(db, project_id)
+    if not approval:
+        return {"status": "draft", "approval": None}
+    return {
+        "status": approval.status,
+        "approval": {
+            "id": approval.id,
+            "status": approval.status,
+            "submitted_by": approval.submitter.username if approval.submitter else None,
+            "submitted_at": approval.submitted_at.isoformat() if approval.submitted_at else None,
+            "reviewed_by": approval.reviewer.username if approval.reviewer else None,
+            "reviewed_at": approval.reviewed_at.isoformat() if approval.reviewed_at else None,
+            "reject_reason": approval.reject_reason,
+        },
+    }
+
+
+@router.post("/{project_id}/budget/approval/submit")
+async def submit_budget_approval(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director", "manager")),
+):
+    """项目经理提交预算审批"""
+    if normalize_identity(current_user.role) not in ("院长", "副院长"):
+        proj_result = await db.execute(select(Project).where(Project.id == project_id))
+        project = proj_result.scalar_one_or_none()
+        if not project or project.manager_id != current_user.employee_id:
+            raise HTTPException(status_code=403, detail="仅本项目被任命的项目经理可提交审批")
+
+    approval = await get_latest_approval(db, project_id)
+    if approval and approval.status == "pending":
+        raise HTTPException(status_code=400, detail="预算已在审批中，请等待审批结果")
+    if approval and approval.status == "approved":
+        raise HTTPException(status_code=400, detail="预算已通过审批，如需修改请先联系院长驳回")
+
+    new_approval = BudgetApproval(
+        project_id=project_id,
+        status="pending",
+        submitted_by=current_user.id,
+    )
+    db.add(new_approval)
+    await db.commit()
+    return {"message": "已提交审批", "status": "pending"}
+
+
+@router.post("/{project_id}/budget/approval/approve")
+async def approve_budget(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director")),
+):
+    """院长/副院长通过预算审批"""
+    from datetime import datetime
+    approval = await get_latest_approval(db, project_id)
+    if not approval or approval.status != "pending":
+        raise HTTPException(status_code=400, detail="当前没有待审批的预算")
+    approval.status = "approved"
+    approval.reviewed_by = current_user.id
+    approval.reviewed_at = datetime.utcnow()
+    await db.commit()
+    return {"message": "审批通过", "status": "approved"}
+
+
+@router.post("/{project_id}/budget/approval/reject")
+async def reject_budget(
+    project_id: str,
+    body: dict = {},
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("director")),
+):
+    """院长/副院长驳回预算审批"""
+    from datetime import datetime
+    approval = await get_latest_approval(db, project_id)
+    if not approval or approval.status != "pending":
+        raise HTTPException(status_code=400, detail="当前没有待审批的预算")
+    approval.status = "rejected"
+    approval.reviewed_by = current_user.id
+    approval.reviewed_at = datetime.utcnow()
+    approval.reject_reason = body.get("reject_reason", "")
+    await db.commit()
+    return {"message": "已驳回", "status": "rejected"}
 
 
 # ============================================================

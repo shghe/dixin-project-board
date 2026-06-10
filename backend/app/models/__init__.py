@@ -13,6 +13,7 @@ from app.models.daily_execution import DailyExecution, ExecutionDetail
 from app.models.payment_record import PaymentRecord
 from app.models.personal_work_entry import PersonalWorkEntry
 from app.models.financial_event import FinancialEvent
+from app.models.budget_approval import BudgetApproval
 from app.models.budget_v2 import (
     BudgetSummary, BudgetPersonnel, BudgetMaterial,
     BudgetEquipment, BudgetDirectCost, BudgetLabor,
@@ -36,6 +37,7 @@ __all__ = [
     "PaymentRecord",
     "PersonalWorkEntry",
     "FinancialEvent",
+    "BudgetApproval",
     "BudgetSummary",
     "BudgetPersonnel",
     "BudgetMaterial",

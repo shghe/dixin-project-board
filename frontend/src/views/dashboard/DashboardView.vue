@@ -7,7 +7,7 @@
         <p class="welcome-date">{{ todayStr }}</p>
       </div>
       <div class="quick-actions">
-        <el-button type="primary" @click="router.push('/projects')"><el-icon><Plus /></el-icon>新建项目</el-button>
+        <el-button type="primary" @click="router.push('/projects')" v-if="canViewProjects"><el-icon><Plus /></el-icon>新建项目</el-button>
         <el-button type="success" @click="router.push('/executions')"><el-icon><Tickets /></el-icon>每日执行单</el-button>
         <el-button type="info" @click="router.push('/reports/personnel')"><el-icon><DataAnalysis /></el-icon>人员报表</el-button>
       </div>
@@ -120,8 +120,11 @@ import { useRouter } from 'vue-router'
 import { Plus, Tickets, DataAnalysis, FolderOpened, Money, CircleCheck, TrendCharts } from '@element-plus/icons-vue'
 import { reportsApi } from '@/api/reports'
 import type { DashboardStats } from '@/api/reports'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const canViewProjects = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
 
 const todayStr = computed(() => {
   const d = new Date()
@@ -140,9 +143,9 @@ const stats = ref<DashboardStats>({
 })
 
 const statCards = computed(() => [
-  { label: '项目总数', value: String(stats.value.total_projects), icon: FolderOpened, color: '#409eff', link: '/projects' },
+  { label: '项目总数', value: String(stats.value.total_projects), icon: FolderOpened, color: '#409eff', link: canViewProjects.value ? '/projects' : undefined },
   { label: '进行中', value: String(stats.value.active_projects), icon: CircleCheck, color: '#67c23a' },
-  { label: '合同总额', value: '¥' + stats.value.total_contract.toLocaleString(), icon: Money, color: '#e6a23c', link: '/projects' },
+  { label: '合同总额', value: '¥' + stats.value.total_contract.toLocaleString(), icon: Money, color: '#e6a23c', link: canViewProjects.value ? '/projects' : undefined },
   { label: '本月成本', value: '¥' + stats.value.month_cost.toLocaleString(), icon: TrendCharts, color: '#f56c6c', link: '/executions' },
 ])
 

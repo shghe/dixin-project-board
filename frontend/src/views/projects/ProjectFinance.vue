@@ -27,15 +27,25 @@
     </el-row>
 
     <el-row :gutter="16" style="margin-top:12px">
-      <el-col :xs="12" :sm="6"><div class="sc">利润</div><div class="sv" :style="{color: data.profit>=0?'#67c23a':'#f56c6c'}">¥{{ data.profit.toLocaleString() }}</div></el-col>
-      <el-col :xs="12" :sm="6"><div class="sc">利润率</div><div class="sv" :style="{color: data.profit_rate>=0?'#67c23a':'#f56c6c'}">{{ data.profit_rate }}%</div></el-col>
+      <el-col :xs="12" :sm="4">
+        <el-card shadow="hover"><div class="sc">报销</div><div class="sv" style="color:#909399">¥{{ data.total_reimbursement.toLocaleString() }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="4">
+        <el-card shadow="hover"><div class="sc">外协付款</div><div class="sv" style="color:#909399">¥{{ data.total_outsource.toLocaleString() }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="4">
+        <el-card shadow="hover"><div class="sc">利润</div><div class="sv" :style="{color: data.profit>=0?'#67c23a':'#f56c6c'}">¥{{ data.profit.toLocaleString() }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="4">
+        <el-card shadow="hover"><div class="sc">利润率</div><div class="sv" :style="{color: data.profit_rate>=0?'#67c23a':'#f56c6c'}">{{ data.profit_rate }}%</div></el-card>
+      </el-col>
     </el-row>
 
     <!-- 财务事件 -->
     <el-card style="margin-top:16px">
       <template #header>
         <div class="card-header-row">
-          <b>产值 / 开票 / 回款记录</b>
+          <b>产值 / 开票 / 回款 / 报销 / 外协付款记录</b>
           <el-button type="primary" size="small" @click="openEventDialog()">添加记录</el-button>
         </div>
       </template>
@@ -43,7 +53,7 @@
         <el-table-column prop="event_date" label="日期" width="110" />
         <el-table-column prop="event_type" label="类型" width="90">
           <template #default="{row}">
-            <el-tag :type="row.event_type==='产值'?'':row.event_type==='开票'?'warning':'success'" size="small">{{ row.event_type }}</el-tag>
+            <el-tag :type="row.event_type==='产值'?'':row.event_type==='开票'?'warning':row.event_type==='回款'?'success':'info'" size="small">{{ row.event_type }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="金额" width="140"><template #default="{row}">¥{{ row.amount.toLocaleString() }}</template></el-table-column>
@@ -80,6 +90,8 @@
             <el-option label="产值" value="产值" />
             <el-option label="开票" value="开票" />
             <el-option label="回款" value="回款" />
+            <el-option label="报销" value="报销" />
+            <el-option label="外协付款" value="外协付款" />
           </el-select>
         </el-form-item>
         <el-form-item label="金额"><el-input-number v-model="eventForm.amount" :min="0" style="width:100%" /></el-form-item>
@@ -105,7 +117,7 @@ const projectName = ref('')
 const data = ref({
   total_budget: 0, budget_personnel: 0, budget_non_personnel: 0,
   exec_count: 0, total_cost: 0, total_output: 0,
-  total_invoice: 0, total_received: 0,
+  total_invoice: 0, total_received: 0, total_reimbursement: 0, total_outsource: 0,
   receivable: 0, profit: 0, profit_rate: 0,
   budget_detail: [] as any[],
 })

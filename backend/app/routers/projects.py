@@ -39,7 +39,7 @@ def generate_project_code(projects: list[Project]) -> str:
 async def list_projects(
     page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
     status: str | None = Query(None), keyword: str | None = Query(None),
-    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role("director", "manager")),
 ):
     query = select(Project).options(joinedload(Project.manager))
     count_query = select(func.count(Project.id))
@@ -93,10 +93,12 @@ async def create_project(data: ProjectCreate, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_project(project_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role("director", "manager"))):
     result = await db.execute(select(Project).options(joinedload(Project.manager)).where(Project.id == project_id))
     p = result.scalar_one_or_none()
     if not p: raise HTTPException(status_code=404, detail="项目不存在")
+    if normalize_identity(current_user.role) == "项目经理" and current_user.employee_id and p.manager_id != current_user.employee_id:
+        raise HTTPException(status_code=403, detail="仅本项目被任命的项目经理可操作")
     return ProjectResponse(id=p.id, project_code=p.project_code, name=p.name,
         region_province=p.region_province, region_city=p.region_city,
         party_a=p.party_a, party_b=p.party_b, contact_person=p.contact_person,
@@ -313,12 +315,16 @@ async def project_finance(project_id: str, db: AsyncSession = Depends(get_db), c
             func.sum(FinancialEvent.amount).filter(FinancialEvent.event_type == "开票"),
             func.sum(FinancialEvent.amount).filter(FinancialEvent.event_type == "产值"),
             func.sum(FinancialEvent.amount).filter(FinancialEvent.event_type == "回款"),
+            func.sum(FinancialEvent.amount).filter(FinancialEvent.event_type == "报销"),
+            func.sum(FinancialEvent.amount).filter(FinancialEvent.event_type == "外协付款"),
         ).where(FinancialEvent.project_id == project_id)
     )
     fin_row = fin_result.one()
     total_invoice = fin_row[0] or 0
     total_output = fin_row[1] or 0
     total_received = fin_row[2] or 0
+    total_reimbursement = fin_row[3] or 0
+    total_outsource = fin_row[4] or 0
 
     receivable = total_invoice - total_received
     profit = total_received - total_cost if total_received > 0 else 0
@@ -348,6 +354,8 @@ async def project_finance(project_id: str, db: AsyncSession = Depends(get_db), c
         "total_output": round(total_output, 2),
         "total_invoice": round(total_invoice, 2),
         "total_received": round(total_received, 2),
+        "total_reimbursement": round(total_reimbursement, 2),
+        "total_outsource": round(total_outsource, 2),
         "receivable": round(receivable, 2),
         "profit": round(profit, 2),
         "profit_rate": profit_rate,

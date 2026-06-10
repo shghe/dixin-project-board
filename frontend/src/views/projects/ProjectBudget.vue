@@ -5,9 +5,30 @@
         <el-button text @click="$router.back()"><el-icon><ArrowLeft /></el-icon> 返回</el-button>
         <h2>{{ project?.name || '项目预算' }}</h2>
       </div>
-      <div>
+      <div class="header-actions">
+        <el-tag v-if="approvalStatus === 'draft'" type="info" size="default">草稿</el-tag>
+        <el-tag v-else-if="approvalStatus === 'pending'" type="warning" size="default">待审批</el-tag>
+        <el-tag v-else-if="approvalStatus === 'approved'" type="success" size="default">已通过</el-tag>
+        <el-tag v-else-if="approvalStatus === 'rejected'" type="danger" size="default">已驳回</el-tag>
+        <el-button v-if="isManager && (approvalStatus === 'draft' || approvalStatus === 'rejected')" type="warning" @click="handleSubmitApproval" :loading="approvalLoading" size="small">提交审批</el-button>
+        <el-button v-if="isDirector && approvalStatus === 'pending'" type="success" @click="handleApprove" :loading="approvalLoading" size="small">通过</el-button>
+        <el-button v-if="isDirector && approvalStatus === 'pending'" type="danger" @click="openRejectDialog" :loading="approvalLoading" size="small">驳回</el-button>
         <el-button type="success" @click="exportExcel" :loading="exporting" size="small">导出Excel</el-button>
       </div>
+    </div>
+    <!-- 驳回原因对话框 -->
+    <el-dialog v-model="rejectDialogVisible" title="驳回原因" width="500px">
+      <el-input v-model="rejectReason" type="textarea" :rows="3" placeholder="请输入驳回原因（可选）" />
+      <template #footer>
+        <el-button @click="rejectDialogVisible = false" size="small">取消</el-button>
+        <el-button type="danger" @click="handleReject" :loading="approvalLoading" size="small">确认驳回</el-button>
+      </template>
+    </el-dialog>
+    <!-- 审批记录 -->
+    <div v-if="approvalDetail" class="approval-history">
+      <span v-if="approvalDetail.submitted_by">提交人：{{ approvalDetail.submitted_by }}，{{ approvalDetail.submitted_at }}</span>
+      <span v-if="approvalDetail.reviewed_by">&nbsp;&nbsp;|&nbsp;&nbsp;审批人：{{ approvalDetail.reviewed_by }}，{{ approvalDetail.reviewed_at }}</span>
+      <span v-if="approvalDetail.reject_reason">&nbsp;&nbsp;|&nbsp;&nbsp;驳回原因：{{ approvalDetail.reject_reason }}</span>
     </div>
 
     <el-tabs v-model="activeTab" type="border-card" @tab-change="onTabChange">
@@ -473,7 +494,67 @@ const saving = ref(false)
 const exporting = ref(false)
 const loadingRollup = ref(false)
 
-const canEdit = computed(() => ['院长', '副院长', '项目经理'].includes(authStore.user?.role || ''))
+const canEdit = computed(() => {
+  const role = authStore.user?.role || ''
+  if (['院长', '副院长'].includes(role)) return true
+  if (role === '项目经理' && !['pending', 'approved'].includes(approvalStatus.value)) return true
+  return false
+})
+const isManager = computed(() => authStore.user?.role === '项目经理')
+const isDirector = computed(() => ['院长', '副院长'].includes(authStore.user?.role || ''))
+
+// ===== 预算审批 =====
+const approvalStatus = ref('draft')
+const approvalDetail = ref<any>(null)
+const approvalLoading = ref(false)
+const rejectDialogVisible = ref(false)
+const rejectReason = ref('')
+
+async function loadApproval() {
+  try {
+    const res = await projectsApi.getBudgetApproval(projectId)
+    approvalStatus.value = res.status || 'draft'
+    approvalDetail.value = res.approval || null
+  } catch {
+    approvalStatus.value = 'draft'
+    approvalDetail.value = null
+  }
+}
+
+async function handleSubmitApproval() {
+  await ElMessageBox.confirm('确定提交审批？提交后将无法编辑预算。', '提交审批', { type: 'warning', confirmButtonText: '确定提交', cancelButtonText: '取消' })
+  approvalLoading.value = true
+  try {
+    await projectsApi.submitBudgetApproval(projectId)
+    ElMessage.success('已提交审批')
+    await loadApproval()
+  } finally { approvalLoading.value = false }
+}
+
+async function handleApprove() {
+  await ElMessageBox.confirm('确定通过该预算？', '审批通过', { type: 'success', confirmButtonText: '通过', cancelButtonText: '取消' })
+  approvalLoading.value = true
+  try {
+    await projectsApi.approveBudget(projectId)
+    ElMessage.success('审批已通过')
+    await loadApproval()
+  } finally { approvalLoading.value = false }
+}
+
+function openRejectDialog() {
+  rejectReason.value = ''
+  rejectDialogVisible.value = true
+}
+
+async function handleReject() {
+  approvalLoading.value = true
+  try {
+    await projectsApi.rejectBudget(projectId, rejectReason.value)
+    ElMessage.success('已驳回')
+    rejectDialogVisible.value = false
+    await loadApproval()
+  } finally { approvalLoading.value = false }
+}
 
 // ===== 项目概况 =====
 const summary = ref<Record<string, any>>({
@@ -800,6 +881,7 @@ function onTabChange(name: string) {
 onMounted(async () => {
   project.value = await projectsApi.get(projectId)
   loadSummary()
+  loadApproval()
 })
 </script>
 
@@ -808,6 +890,8 @@ onMounted(async () => {
 .page h2 { font-size: 20px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; }
 .page-header > div:first-child { display: flex; align-items: center; gap: 8px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.approval-history { padding: 8px 12px; margin-top: 8px; background: #f5f7fa; border-radius: 6px; font-size: 12px; color: #606266; }
 .stat-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 6px; padding: 14px 16px; }
 .stat-label { font-size: 12px; color: #909399; margin-bottom: 6px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #303133; }

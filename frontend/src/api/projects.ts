@@ -79,6 +79,12 @@ export const projectsApi = {
   getBudgetRollup: (projectId: string) => get<any>(`/projects/${projectId}/budget/rollup`),
   getBudgetExportUrl: (projectId: string) => `/api/projects/${projectId}/budget/export`,
 
+  // 预算审批
+  getBudgetApproval: (projectId: string) => get<any>(`/projects/${projectId}/budget/approval`),
+  submitBudgetApproval: (projectId: string) => post<any>(`/projects/${projectId}/budget/approval/submit`, {}),
+  approveBudget: (projectId: string) => post<any>(`/projects/${projectId}/budget/approval/approve`, {}),
+  rejectBudget: (projectId: string, reason?: string) => post<any>(`/projects/${projectId}/budget/approval/reject`, { reject_reason: reason || '' }),
+
   // 人工费
   listBudgetPersonnel: (projectId: string) => get<any[]>(`/projects/${projectId}/budget/personnel`),
   createBudgetPersonnel: (projectId: string, data: any) => post<any>(`/projects/${projectId}/budget/personnel`, data),

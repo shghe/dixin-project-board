@@ -52,4 +52,17 @@ router.beforeEach(async (to, _from, next) => {
   next()
 })
 
+// 项目管理权限检查：仅院长/副院长/项目经理可访问
+router.beforeEach((to, _from, next) => {
+  if (to.path.startsWith('/projects')) {
+    const authStore = useAuthStore()
+    const role = authStore.user?.role || ''
+    if (!['院长', '副院长', '项目经理'].includes(role)) {
+      next('/dashboard')
+      return
+    }
+  }
+  next()
+})
+
 export default router

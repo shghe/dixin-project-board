@@ -5,7 +5,7 @@
       <el-menu-item index="/dashboard"><el-icon><Odometer /></el-icon><span>首页</span></el-menu-item>
       <el-menu-item index="/users" v-if="isDirector"><el-icon><Setting /></el-icon><span>账号管理</span></el-menu-item>
       <el-menu-item index="/employees"><el-icon><User /></el-icon><span>人员管理</span></el-menu-item>
-      <el-menu-item index="/projects"><el-icon><Folder /></el-icon><span>项目管理</span></el-menu-item>
+      <el-menu-item index="/projects" v-if="canViewProjects"><el-icon><Folder /></el-icon><span>项目管理</span></el-menu-item>
       <el-menu-item index="/executions" v-if="canViewExec"><el-icon><Tickets /></el-icon><span>每日执行单</span></el-menu-item>
       <el-menu-item index="/my-work"><el-icon><Clock /></el-icon><span>我的工时</span></el-menu-item>
       <el-menu-item index="/reports/personnel"><el-icon><DataAnalysis /></el-icon><span>人员报表</span></el-menu-item>
@@ -27,6 +27,7 @@ const authStore = useAuthStore()
 const currentRoute = computed(() => route.path)
 const isDirector = computed(() => authStore.user?.role === '院长')
 const canViewExec = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
+const canViewProjects = computed(() => ['院长','副院长','项目经理'].includes(authStore.user?.role||''))
 </script>
 
 <style scoped>
